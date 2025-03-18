@@ -40,9 +40,8 @@ export default function MatchDetails({ match }: MatchDetailsProps) {
 
   return (
     <Card className="bg-card/95 backdrop-blur">
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader>
         <CardTitle className="text-2xl font-bold text-primary">Match Details</CardTitle>
-        <NotificationToggle matchTime={new Date(match.kickoff)} />
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-col gap-2">
@@ -53,6 +52,7 @@ export default function MatchDetails({ match }: MatchDetailsProps) {
             <ClockIcon className="h-4 w-4" />
             <span>{kickoffDate} at {kickoffTime}</span>
           </div>
+          <NotificationToggle matchTime={new Date(match.kickoff)} />
         </div>
 
         <Separator />
