@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Match } from "@shared/schema";
 import { BROADCASTERS } from "@shared/constants";
 import { Separator } from "@/components/ui/separator";
-import { TvIcon, MapPinIcon, TrophyIcon, ExternalLinkIcon } from "lucide-react";
+import { TvIcon, MapPinIcon, TrophyIcon, ExternalLinkIcon, ClockIcon } from "lucide-react";
+import { format } from "date-fns";
 
 interface MatchDetailsProps {
   match: Match;
@@ -33,15 +34,22 @@ export default function MatchDetails({ match }: MatchDetailsProps) {
     ) 
     : "Check local listings";
 
+  const kickoffTime = format(new Date(match.kickoff), 'h:mm a');
+  const kickoffDate = format(new Date(match.kickoff), 'MMM d');
+
   return (
     <Card className="bg-card/95 backdrop-blur">
       <CardHeader>
         <CardTitle className="text-2xl font-bold text-primary">Match Details</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col gap-2">
           <div className="text-xl font-semibold">
             {match.homeTeam} vs {match.awayTeam}
+          </div>
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <ClockIcon className="h-4 w-4" />
+            <span>{kickoffDate} at {kickoffTime}</span>
           </div>
         </div>
 
