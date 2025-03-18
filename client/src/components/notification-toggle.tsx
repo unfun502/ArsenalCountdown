@@ -56,16 +56,16 @@ export default function NotificationToggle({ matchTime }: NotificationToggleProp
 
     // Schedule notification based on selected time
     const minutesBefore = parseInt(notificationTime);
-    const notificationTime = new Date(matchTime.getTime() - minutesBefore * 60 * 1000);
+    const scheduledTime = new Date(matchTime.getTime() - minutesBefore * 60 * 1000);
     const now = new Date();
 
-    if (notificationTime > now) {
+    if (scheduledTime > now) {
       const timeout = setTimeout(() => {
         new Notification('Match Reminder', {
           body: `Arsenal match starts in ${minutesBefore} minute${minutesBefore === 1 ? '' : 's'}!`,
           icon: '/arsenal-icon.png'
         });
-      }, notificationTime.getTime() - now.getTime());
+      }, scheduledTime.getTime() - now.getTime());
 
       return () => clearTimeout(timeout);
     }
