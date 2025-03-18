@@ -5,6 +5,7 @@ import { BROADCASTERS } from "@shared/constants";
 import { Separator } from "@/components/ui/separator";
 import { TvIcon, MapPinIcon, TrophyIcon, ExternalLinkIcon, ClockIcon } from "lucide-react";
 import { format } from "date-fns";
+import NotificationToggle from "./notification-toggle";
 
 interface MatchDetailsProps {
   match: Match;
@@ -39,8 +40,9 @@ export default function MatchDetails({ match }: MatchDetailsProps) {
 
   return (
     <Card className="bg-card/95 backdrop-blur">
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-2xl font-bold text-primary">Match Details</CardTitle>
+        <NotificationToggle matchTime={new Date(match.kickoff)} />
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-col gap-2">
