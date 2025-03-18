@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Match } from "@shared/schema";
 import { BROADCASTERS } from "@shared/constants";
 import { Separator } from "@/components/ui/separator";
-import { TvIcon, MapPinIcon, TrophyIcon } from "lucide-react";
+import { TvIcon, MapPinIcon, TrophyIcon, ExternalLinkIcon } from "lucide-react";
 
 interface MatchDetailsProps {
   match: Match;
@@ -19,7 +19,19 @@ export default function MatchDetails({ match }: MatchDetailsProps) {
       .catch(err => console.error("Failed to get user location:", err));
   }, []);
 
-  const broadcaster = userCountry ? BROADCASTERS[userCountry] : "Check local listings";
+  const broadcaster = userCountry && BROADCASTERS[userCountry];
+  const broadcasterInfo = broadcaster 
+    ? (
+      <a 
+        href={broadcaster.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-2 text-primary hover:underline"
+      >
+        Watch on {broadcaster.name} <ExternalLinkIcon className="h-4 w-4" />
+      </a>
+    ) 
+    : "Check local listings";
 
   return (
     <Card className="bg-card/95 backdrop-blur">
@@ -48,7 +60,7 @@ export default function MatchDetails({ match }: MatchDetailsProps) {
 
           <div className="flex items-center gap-2">
             <TvIcon className="h-5 w-5 text-primary" />
-            <span>Watch on: {broadcaster}</span>
+            {broadcasterInfo}
           </div>
         </div>
       </CardContent>
