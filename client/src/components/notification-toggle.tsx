@@ -31,11 +31,12 @@ export default function NotificationToggle({ matchTime }: NotificationToggleProp
   const [notificationTime, setNotificationTime] = useState('60');
   const { toast } = useToast();
 
+  // Check if device is mobile
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const notificationsSupported = 'Notification' in window && !isMobile;
+
   useEffect(() => {
-    // Check if notifications are supported
-    if (!('Notification' in window)) {
-      return;
-    }
+    if (!notificationsSupported) return;
 
     // Check initial permission status
     setPermissionGranted(Notification.permission === 'granted');
@@ -49,10 +50,10 @@ export default function NotificationToggle({ matchTime }: NotificationToggleProp
     if (savedTime) {
       setNotificationTime(savedTime);
     }
-  }, []);
+  }, [notificationsSupported]);
 
   useEffect(() => {
-    if (!notificationsEnabled || !permissionGranted) return;
+    if (!notificationsEnabled || !permissionGranted || !notificationsSupported) return;
 
     // Schedule notification based on selected time
     const minutesBefore = parseInt(notificationTime);
@@ -69,13 +70,13 @@ export default function NotificationToggle({ matchTime }: NotificationToggleProp
 
       return () => clearTimeout(timeout);
     }
-  }, [notificationsEnabled, permissionGranted, matchTime, notificationTime]);
+  }, [notificationsEnabled, permissionGranted, matchTime, notificationTime, notificationsSupported]);
 
   const toggleNotifications = async () => {
-    if (!('Notification' in window)) {
+    if (!notificationsSupported) {
       toast({
-        title: "Not Supported",
-        description: "Your browser doesn't support notifications",
+        title: "Notifications Not Available",
+        description: "Match notifications are only available on desktop browsers. Please use a computer to enable notifications.",
         variant: "destructive"
       });
       return;
@@ -110,6 +111,20 @@ export default function NotificationToggle({ matchTime }: NotificationToggleProp
         : "You won't receive match reminders",
     });
   };
+
+  if (!notificationsSupported) {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={toggleNotifications}
+        className="gap-2"
+      >
+        <BellOffIcon className="h-4 w-4" />
+        Not Available on Mobile
+      </Button>
+    );
+  }
 
   return (
     <div className="flex items-center gap-2">
