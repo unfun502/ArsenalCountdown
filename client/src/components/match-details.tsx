@@ -72,8 +72,7 @@ export default function MatchDetails({ match }: MatchDetailsProps) {
           <div className="flex items-center gap-2">
             <TvIcon className="h-5 w-5 text-primary" />
             <div className="flex flex-col gap-1">
-              <span>{broadcasterInfo}</span>
-              {match.competition === "Premier League" && (
+              {match.competition === "Premier League" ? (
                 <div className="text-sm text-muted-foreground">
                   {navigator.language.includes('en-GB') && (
                     <>
@@ -94,6 +93,8 @@ export default function MatchDetails({ match }: MatchDetailsProps) {
                        rel="noopener noreferrer">Watch on Peacock</a>
                   )}
                 </div>
+              )) : (
+                <span>{broadcasterInfo}</span>
               )}
             </div>
           </div>
