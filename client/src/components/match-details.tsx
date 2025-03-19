@@ -83,7 +83,7 @@ export default function MatchDetails({ match }: MatchDetailsProps) {
               endTime: format(new Date(match.kickoff).setHours(new Date(match.kickoff).getHours() + 2), 'HH:mm'),
               location: match.venue,
               options: ['Google', 'Apple', 'Microsoft365', 'Outlook.com', 'iCal'],
-              timeZone: "UTC"
+              timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
             })}
             className="flex items-center gap-2 text-primary hover:underline"
           >
