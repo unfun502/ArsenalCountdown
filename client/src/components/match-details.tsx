@@ -93,7 +93,7 @@ export default function MatchDetails({ match }: MatchDetailsProps) {
                        rel="noopener noreferrer">Watch on Peacock</a>
                   )}
                 </div>
-              )) : (
+              ) : (
                 <span>{broadcasterInfo}</span>
               )}
             </div>
