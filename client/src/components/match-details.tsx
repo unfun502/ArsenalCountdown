@@ -5,6 +5,7 @@ import { BROADCASTERS } from "@shared/constants";
 import { Separator } from "@/components/ui/separator";
 import { TvIcon, MapPinIcon, TrophyIcon, ExternalLinkIcon, ClockIcon } from "lucide-react";
 import { format } from "date-fns";
+import { atcb_action } from "add-to-calendar-button";
 import NotificationToggle from "./notification-toggle";
 
 interface MatchDetailsProps {
@@ -72,6 +73,22 @@ export default function MatchDetails({ match }: MatchDetailsProps) {
             <TvIcon className="h-5 w-5 text-primary" />
             {broadcasterInfo}
           </div>
+
+          <button
+            onClick={() => atcb_action({
+              name: `${match.homeTeam} vs ${match.awayTeam}`,
+              description: `${match.competition} match at ${match.venue}`,
+              startDate: format(new Date(match.kickoff), 'yyyy-MM-dd'),
+              startTime: format(new Date(match.kickoff), 'HH:mm'),
+              endTime: format(new Date(match.kickoff).setHours(new Date(match.kickoff).getHours() + 2), 'HH:mm'),
+              location: match.venue,
+              options: ['Google', 'Apple', 'Microsoft365', 'Outlook.com', 'iCal'],
+              timeZone: "UTC"
+            })}
+            className="flex items-center gap-2 text-primary hover:underline"
+          >
+            Add to Calendar
+          </button>
         </div>
       </CardContent>
     </Card>
