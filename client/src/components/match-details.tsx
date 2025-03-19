@@ -74,7 +74,7 @@ export default function MatchDetails({ match }: MatchDetailsProps) {
             <div className="flex flex-col gap-1">
               {match.competition === "Premier League" ? (
                 <div className="text-sm text-muted-foreground">
-                  {navigator.language.startsWith('en-GB') && (
+                  {userCountry === 'GB' && (
                     <>
                       <a href={`https://www.skysports.com/watch/football/teams/arsenal`} 
                          className="text-primary hover:underline mr-2" 
@@ -86,7 +86,7 @@ export default function MatchDetails({ match }: MatchDetailsProps) {
                          rel="noopener noreferrer">TNT Sports</a>
                     </>
                   )}
-                  {navigator.language.startsWith('en-US') && (
+                  {userCountry === 'US' && (
                     <a href={`https://www.peacocktv.com/sports/soccer/premier-league/arsenal`} 
                        className="text-primary hover:underline" 
                        target="_blank" 
