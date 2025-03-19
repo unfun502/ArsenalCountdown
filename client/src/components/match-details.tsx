@@ -71,7 +71,31 @@ export default function MatchDetails({ match }: MatchDetailsProps) {
 
           <div className="flex items-center gap-2">
             <TvIcon className="h-5 w-5 text-primary" />
-            {broadcasterInfo}
+            <div className="flex flex-col gap-1">
+              <span>{broadcasterInfo}</span>
+              {match.competition === "Premier League" && (
+                <div className="text-sm text-muted-foreground">
+                  {navigator.language.includes('en-GB') && (
+                    <>
+                      <a href={`https://www.skysports.com/watch/football/teams/arsenal`} 
+                         className="text-primary hover:underline mr-2" 
+                         target="_blank" 
+                         rel="noopener noreferrer">Sky Sports</a>
+                      <a href={`https://www.tntplay.com/sports/football`} 
+                         className="text-primary hover:underline" 
+                         target="_blank" 
+                         rel="noopener noreferrer">TNT Sports</a>
+                    </>
+                  )}
+                  {navigator.language.includes('en-US') && (
+                    <a href={`https://www.peacocktv.com/sports/soccer/premier-league/arsenal`} 
+                       className="text-primary hover:underline" 
+                       target="_blank" 
+                       rel="noopener noreferrer">Watch on Peacock</a>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           <button
