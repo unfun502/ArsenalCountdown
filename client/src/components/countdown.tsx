@@ -42,7 +42,7 @@ export default function Countdown({ kickoff }: CountdownProps) {
         <div className="grid grid-cols-4 gap-4 text-center">
           {Object.entries(timeLeft).map(([unit, value]) => (
             <div key={unit} className="flex flex-col">
-              <span className="text-4xl font-bold text-white">
+              <span className="text-4xl font-bold text-white font-mono" style={{ fontFamily: 'JetBrains Mono' }}>
                 {value.toString().padStart(2, '0')}
               </span>
               <span className="text-sm text-muted-foreground capitalize">{unit}</span>
