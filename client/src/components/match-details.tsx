@@ -37,7 +37,7 @@ export default function MatchDetails({ match }: MatchDetailsProps) {
     : "Check local listings";
 
   const kickoffTime = format(new Date(match.kickoff), 'h:mm a');
-  const kickoffDate = format(new Date(match.kickoff), 'MMM d');
+  const kickoffDate = format(new Date(match.kickoff), 'EEEE, MMM d');
 
   return (
     <Card className="bg-card/95 backdrop-blur">
@@ -53,7 +53,9 @@ export default function MatchDetails({ match }: MatchDetailsProps) {
             <ClockIcon className="h-4 w-4" />
             <span>{kickoffDate} at {kickoffTime}</span>
           </div>
-          <NotificationToggle matchTime={new Date(match.kickoff)} />
+          <div className="mt-2">
+            <NotificationToggle matchTime={new Date(match.kickoff)} />
+          </div>
         </div>
 
         <Separator />
