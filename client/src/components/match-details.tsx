@@ -40,17 +40,17 @@ export default function MatchDetails({ match }: MatchDetailsProps) {
   const kickoffDate = format(new Date(match.kickoff), 'EEEE, MMM d');
 
   return (
-    <Card className="bg-card/95 backdrop-blur">
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold text-primary">Match Details</CardTitle>
+    <Card className="bg-codepen-black border-none shadow-xl">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-2xl font-bold text-white">Match Details</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-col gap-2">
-          <div className="text-xl font-semibold">
+          <div className="text-xl font-semibold text-codepen-purple">
             {match.homeTeam} vs {match.awayTeam}
           </div>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <ClockIcon className="h-4 w-4" />
+          <div className="flex items-center gap-2 text-white/70">
+            <ClockIcon className="h-4 w-4 text-codepen-blue" />
             <span>{kickoffDate} at {kickoffTime}</span>
           </div>
           <div className="mt-2">
@@ -58,45 +58,45 @@ export default function MatchDetails({ match }: MatchDetailsProps) {
           </div>
         </div>
 
-        <Separator />
+        <Separator className="bg-white/10" />
 
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <TrophyIcon className="h-5 w-5 text-primary" />
-            <span>{match.competition}</span>
+            <TrophyIcon className="h-5 w-5 text-codepen-teal" />
+            <span className="text-white">{match.competition}</span>
           </div>
 
           <div className="flex items-center gap-2">
-            <MapPinIcon className="h-5 w-5 text-primary" />
-            <span>{match.venue}</span>
+            <MapPinIcon className="h-5 w-5 text-codepen-blue" />
+            <span className="text-white">{match.venue}</span>
           </div>
 
           <div className="flex items-center gap-2">
-            <TvIcon className="h-5 w-5 text-primary" />
-            <div className="flex flex-col gap-1">
+            <TvIcon className="h-5 w-5 text-codepen-purple" />
+            <div className="flex flex-col gap-1 text-white">
               {match.competition === "Premier League" ? (
-                <div className="text-sm text-muted-foreground">
+                <div className="text-sm text-white/70">
                   {userCountry === 'GB' && (
                     <>
                       <a href={`https://www.skysports.com/watch/football/teams/arsenal`} 
-                         className="text-primary hover:underline mr-2" 
+                         className="text-codepen-blue hover:underline mr-2" 
                          target="_blank" 
                          rel="noopener noreferrer">Sky Sports</a>
                       <a href={`https://www.tntplay.com/sports/football`} 
-                         className="text-primary hover:underline" 
+                         className="text-codepen-teal hover:underline" 
                          target="_blank" 
                          rel="noopener noreferrer">TNT Sports</a>
                     </>
                   )}
                   {userCountry === 'US' && (
                     <a href={`https://www.peacocktv.com/sports/soccer/premier-league/arsenal`} 
-                       className="text-primary hover:underline" 
+                       className="text-codepen-blue hover:underline" 
                        target="_blank" 
                        rel="noopener noreferrer">Watch on Peacock</a>
                   )}
                 </div>
               ) : (
-                <span>{broadcasterInfo}</span>
+                <span className="text-white">{broadcasterInfo}</span>
               )}
             </div>
           </div>
@@ -112,7 +112,7 @@ export default function MatchDetails({ match }: MatchDetailsProps) {
               options: ['Google', 'Apple', 'Microsoft365', 'Outlook.com', 'iCal'],
               timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
             })}
-            className="flex items-center gap-2 text-primary hover:underline"
+            className="flex items-center gap-2 text-codepen-teal hover:text-codepen-blue transition-colors"
           >
             Add to Calendar
           </button>

@@ -36,18 +36,24 @@ export default function Countdown({ kickoff }: CountdownProps) {
   }, [kickoff]);
 
   return (
-    <Card className="bg-card/95 backdrop-blur">
+    <Card className="bg-codepen-black border-none shadow-xl">
       <CardContent className="p-6">
-        <h2 className="text-lg font-semibold text-primary mb-4">Next Match Kicks Off In:</h2>
+        <h2 className="text-lg font-semibold mb-4 text-white">Next Match Kicks Off In:</h2>
         <div className="grid grid-cols-4 gap-4 text-center">
-          {Object.entries(timeLeft).map(([unit, value]) => (
-            <div key={unit} className="flex flex-col">
-              <span className="text-4xl font-bold text-white font-mono" style={{ fontFamily: 'JetBrains Mono' }}>
-                {value.toString().padStart(2, '0')}
-              </span>
-              <span className="text-sm text-muted-foreground capitalize">{unit}</span>
-            </div>
-          ))}
+          {Object.entries(timeLeft).map(([unit, value], index) => {
+            // Alternate accent colors for each unit
+            const accentColors = ['text-codepen-teal', 'text-codepen-blue', 'text-codepen-purple', 'text-codepen-teal'];
+            const accentColor = accentColors[index];
+            
+            return (
+              <div key={unit} className="flex flex-col">
+                <span className={`text-4xl font-bold font-mono ${accentColor}`} style={{ fontFamily: 'JetBrains Mono' }}>
+                  {value.toString().padStart(2, '0')}
+                </span>
+                <span className="text-sm text-white/70 capitalize mt-1">{unit}</span>
+              </div>
+            );
+          })}
         </div>
       </CardContent>
     </Card>

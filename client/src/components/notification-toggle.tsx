@@ -118,9 +118,9 @@ export default function NotificationToggle({ matchTime }: NotificationToggleProp
         variant="outline"
         size="sm"
         onClick={toggleNotifications}
-        className="gap-2"
+        className="gap-2 bg-codepen-black border-white/20 text-white hover:bg-white/10"
       >
-        <BellOffIcon className="h-4 w-4" />
+        <BellOffIcon className="h-4 w-4 text-codepen-purple" />
         Not Available on Mobile
       </Button>
     );
@@ -140,12 +140,16 @@ export default function NotificationToggle({ matchTime }: NotificationToggleProp
             });
           }}
         >
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px] bg-codepen-black border-white/20 text-white focus:ring-codepen-blue">
             <SelectValue placeholder="Select reminder time" />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-codepen-black border-white/20 text-white">
             {NOTIFICATION_TIMES.map((time) => (
-              <SelectItem key={time.value} value={time.value}>
+              <SelectItem 
+                key={time.value} 
+                value={time.value}
+                className="text-white focus:bg-white/10 focus:text-white"
+              >
                 {time.label}
               </SelectItem>
             ))}
@@ -156,16 +160,16 @@ export default function NotificationToggle({ matchTime }: NotificationToggleProp
         variant="outline"
         size="sm"
         onClick={toggleNotifications}
-        className="gap-2"
+        className={`gap-2 bg-codepen-black border-white/20 ${notificationsEnabled ? 'text-codepen-teal hover:bg-codepen-teal/10' : 'text-white hover:bg-white/10'}`}
       >
         {notificationsEnabled ? (
           <>
-            <BellIcon className="h-4 w-4" />
+            <BellIcon className="h-4 w-4 text-codepen-teal" />
             Notifications On
           </>
         ) : (
           <>
-            <BellOffIcon className="h-4 w-4" />
+            <BellOffIcon className="h-4 w-4 text-codepen-blue" />
             Notifications Off
           </>
         )}

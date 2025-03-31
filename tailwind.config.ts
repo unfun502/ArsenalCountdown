@@ -44,6 +44,12 @@ export default {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
+        codepen: {
+          black: "#131417",
+          teal: "#47cf73",
+          blue: "#0ebeff",
+          purple: "#ae63e4",
+        },
         chart: {
           "1": "hsl(var(--chart-1))",
           "2": "hsl(var(--chart-2))",
