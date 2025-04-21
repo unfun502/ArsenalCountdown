@@ -53,9 +53,6 @@ export default function MatchDetails({ match }: MatchDetailsProps) {
             <ClockIcon className="h-4 w-4 text-[#FF0000]" />
             <span>{kickoffDate} at {kickoffTime}</span>
           </div>
-          <div className="mt-2">
-            <NotificationToggle matchTime={new Date(match.kickoff)} />
-          </div>
         </div>
 
         <Separator className="bg-white/10" />
@@ -116,6 +113,10 @@ export default function MatchDetails({ match }: MatchDetailsProps) {
           >
             Add to Calendar
           </button>
+          
+          <div className="mt-4">
+            <NotificationToggle matchTime={new Date(match.kickoff)} />
+          </div>
         </div>
       </CardContent>
     </Card>
