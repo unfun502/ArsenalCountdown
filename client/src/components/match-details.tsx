@@ -40,17 +40,17 @@ export default function MatchDetails({ match }: MatchDetailsProps) {
   const kickoffDate = format(new Date(match.kickoff), 'EEEE, MMM d');
 
   return (
-    <Card className="bg-codepen-black border-none shadow-xl">
+    <Card className="bg-white border border-gray-200 shadow-md">
       <CardHeader className="pb-2">
-        <CardTitle className="text-2xl font-bold text-white">Match Details</CardTitle>
+        <CardTitle className="text-2xl font-bold text-black">Match Details</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-col gap-2">
-          <div className="text-xl font-semibold text-codepen-purple">
+          <div className="text-xl font-semibold text-[#FF0000]">
             {match.homeTeam} vs {match.awayTeam}
           </div>
-          <div className="flex items-center gap-2 text-white/70">
-            <ClockIcon className="h-4 w-4 text-codepen-blue" />
+          <div className="flex items-center gap-2 text-gray-600">
+            <ClockIcon className="h-4 w-4 text-[#FF0000]" />
             <span>{kickoffDate} at {kickoffTime}</span>
           </div>
           <div className="mt-2">
@@ -62,18 +62,18 @@ export default function MatchDetails({ match }: MatchDetailsProps) {
 
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <TrophyIcon className="h-5 w-5 text-codepen-teal" />
-            <span className="text-white">{match.competition}</span>
+            <TrophyIcon className="h-5 w-5 text-[#FF0000]" />
+            <span className="text-black">{match.competition}</span>
           </div>
 
           <div className="flex items-center gap-2">
-            <MapPinIcon className="h-5 w-5 text-codepen-blue" />
-            <span className="text-white">{match.venue}</span>
+            <MapPinIcon className="h-5 w-5 text-[#FF0000]" />
+            <span className="text-black">{match.venue}</span>
           </div>
 
           <div className="flex items-center gap-2">
-            <TvIcon className="h-5 w-5 text-codepen-purple" />
-            <div className="flex flex-col gap-1 text-white">
+            <TvIcon className="h-5 w-5 text-[#FF0000]" />
+            <div className="flex flex-col gap-1 text-black">
               {match.competition === "Premier League" ? (
                 <div className="text-sm text-white/70">
                   {userCountry === 'GB' && (
