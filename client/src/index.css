@@ -19,8 +19,8 @@
   body {
     font-family: 'Lato', sans-serif;
     @apply antialiased min-h-screen;
-    background-color: var(--codepen-black);
-    color: #ffffff;
+    background-color: #ffffff;
+    color: #000000;
   }
 
   h1 {

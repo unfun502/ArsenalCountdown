@@ -35,9 +35,9 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-codepen-black flex flex-col items-center justify-center p-6">
-      <h1 className="text-3xl md:text-4xl font-bold text-white mb-6">
-        Arsenal <span className="text-codepen-blue">Match</span> <span className="text-codepen-teal">Countdown</span>
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
+      <h1 className="text-3xl md:text-4xl font-bold text-black mb-6">
+        Arsenal <span className="text-[#FF0000]">Match Countdown</span>
       </h1>
       
       {isLoading ? (
