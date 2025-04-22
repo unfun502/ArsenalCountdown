@@ -30,7 +30,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       );
 
+      console.log("API Response:", JSON.stringify(response.data, null, 2));
+      
       const nextMatch = response.data.matches[0];
+      if (!nextMatch) {
+        console.log("No upcoming matches found in API response");
+        return res.status(404).json({ message: "No upcoming matches found" });
+      }
 
       // Transform to our schema
       const matchData = {
