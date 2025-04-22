@@ -65,7 +65,7 @@ export default function MatchDetails({ match }: MatchDetailsProps) {
 
           <div className="flex items-center gap-2">
             <MapPinIcon className="h-5 w-5 text-[#FF0000]" />
-            <span className="text-black">{match.venue}</span>
+            <span className="text-black">@ {match.homeTeam}</span>
           </div>
 
           <div className="flex items-center gap-2">
