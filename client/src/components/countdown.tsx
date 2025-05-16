@@ -198,15 +198,15 @@ export default function Countdown({ kickoff }: CountdownProps) {
     { label: "SECS", value: displayValues.seconds, prevValue: prevTimeLeft.seconds }
   ];
 
-  // Create day, date and time display for current time
-  const now = new Date();
-  const dayOfWeek = format(now, 'EEEE').toUpperCase();
-  const currentDate = format(now, 'MMM dd, yyyy').toUpperCase();
-  const currentTime = format(now, 'hh:mm:ss a').toUpperCase();
+  // Create day, date and time display for the match
+  const matchDate = new Date(kickoff);
+  const dayOfWeek = format(matchDate, 'EEEE').toUpperCase();
+  const matchDateFormatted = format(matchDate, 'MMM dd').toUpperCase();
+  const matchTime = format(matchDate, 'hh:mm a').toUpperCase();
   
-  // Format current time for split flap display
-  const [hours, minutes, secondsWithAMPM] = currentTime.split(':');
-  const [seconds, ampm] = secondsWithAMPM.split(' ');
+  // Format match time for split flap display
+  const [hours, minutesWithAMPM] = matchTime.split(':');
+  const [minutes, ampm] = minutesWithAMPM.split(' ');
   
   // Update every second
   const [tick, setTick] = useState(0);
@@ -237,7 +237,7 @@ export default function Countdown({ kickoff }: CountdownProps) {
           </div>
         </div>
         
-        {/* Day, Date and Time Panel */}
+        {/* Match Details Panel */}
         <div className="splitflap-display mt-6">
           <div className="flex flex-col space-y-4">
             {/* Day of Week */}
@@ -251,9 +251,9 @@ export default function Countdown({ kickoff }: CountdownProps) {
               ))}
             </div>
             
-            {/* Date */}
+            {/* Date (without year) */}
             <div className="flex justify-center space-x-1">
-              {currentDate.split('').map((char, index) => (
+              {matchDateFormatted.split('').map((char, index) => (
                 <SplitFlapChar 
                   key={`date-${index}`} 
                   value={char} 
@@ -262,41 +262,37 @@ export default function Countdown({ kickoff }: CountdownProps) {
               ))}
             </div>
             
-            {/* Time */}
+            {/* Match Time */}
             <div className="flex justify-center space-x-1">
               <SplitFlapDigit 
                 value={hours[0]} 
                 initialAnimation={initialLoad}
-                shouldAnimate={true}
+                shouldAnimate={false}
               />
               <SplitFlapDigit 
                 value={hours[1]} 
                 initialAnimation={initialLoad}
-                shouldAnimate={true}
+                shouldAnimate={false}
               />
               <SplitFlapChar value=":" initialAnimation={initialLoad} />
               <SplitFlapDigit 
                 value={minutes[0]} 
                 initialAnimation={initialLoad}
-                shouldAnimate={true}
+                shouldAnimate={false}
               />
               <SplitFlapDigit 
                 value={minutes[1]} 
                 initialAnimation={initialLoad}
-                shouldAnimate={true}
+                shouldAnimate={false}
               />
-              <SplitFlapChar value=":" initialAnimation={initialLoad} />
-              <SplitFlapDigit 
-                value={seconds[0]} 
-                initialAnimation={initialLoad}
-                shouldAnimate={true}
-              />
-              <SplitFlapDigit 
-                value={seconds[1]} 
-                initialAnimation={initialLoad}
-                shouldAnimate={true}
-              />
-              <SplitFlapChar value={ampm} initialAnimation={initialLoad} />
+              <SplitFlapChar value=" " initialAnimation={initialLoad} />
+              {ampm.split('').map((char, index) => (
+                <SplitFlapChar 
+                  key={`ampm-${index}`} 
+                  value={char} 
+                  initialAnimation={initialLoad}
+                />
+              ))}
             </div>
           </div>
         </div>
