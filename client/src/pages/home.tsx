@@ -2,9 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Match } from "@shared/schema";
 import Countdown from "@/components/countdown";
-import MatchDetails from "@/components/match-details";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { atcb_action } from "add-to-calendar-button";
 
 export default function Home() {
   const { toast } = useToast();
@@ -45,10 +48,28 @@ export default function Home() {
       ) : match ? (
         <div className="space-y-8 w-full max-w-2xl">
           <Countdown kickoff={new Date(match.kickoff)} match={match} />
-          <MatchDetails match={match} />
           
-          <div className="text-center text-white/50 text-sm mt-8">
-            <p>© {new Date().getFullYear()} Arsenal Match Countdown</p>
+          <div className="text-center mt-8">
+            <Button
+              onClick={() => atcb_action({
+                name: `${match.homeTeam} vs ${match.awayTeam}`,
+                description: `${match.competition} match at ${match.venue}`,
+                startDate: format(new Date(match.kickoff), 'yyyy-MM-dd'),
+                startTime: format(new Date(match.kickoff), 'HH:mm'),
+                endTime: format(new Date(match.kickoff).setHours(new Date(match.kickoff).getHours() + 2), 'HH:mm'),
+                location: match.venue,
+                options: ['Google', 'Apple', 'Microsoft365', 'Outlook.com', 'iCal'],
+                timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+              })}
+              className="bg-codepen-black border border-white/20 text-white hover:bg-white/10 mb-4"
+            >
+              <CalendarIcon className="h-4 w-4 mr-2" />
+              Add to Calendar
+            </Button>
+            
+            <div className="text-white/50 text-sm mt-4">
+              <p>© {new Date().getFullYear()} Arsenal Match Countdown</p>
+            </div>
           </div>
         </div>
       ) : null}
