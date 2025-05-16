@@ -26,10 +26,10 @@ const SplitFlapNumber = ({ value }: { value: number }) => {
   return (
     <div className="split-flap w-16 md:w-20">
       <div className={`split-flap-top ${flipping ? 'flip' : ''}`}>
-        <span className="text-4xl font-bold text-[#FF0000]">{displayValue}</span>
+        <span className="text-4xl font-bold text-[#FF0000]">{!flipping ? displayValue : ''}</span>
       </div>
       <div className={`split-flap-bottom ${flipping ? 'flop' : ''}`}>
-        <span className="text-4xl font-bold text-[#FF0000]">{displayValue}</span>
+        <span className="text-4xl font-bold text-[#FF0000]">{flipping ? displayValue : ''}</span>
       </div>
     </div>
   );
