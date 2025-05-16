@@ -35,10 +35,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6">
-      <h1 className="text-3xl md:text-4xl font-bold text-black mb-6">
-        Arsenal <span className="text-[#FF0000]">Match Countdown</span>
-      </h1>
+    <div className="min-h-screen bg-[#1E1E1E] flex flex-col items-center justify-center p-6">
       
       {isLoading ? (
         <div className="space-y-8 w-full max-w-2xl">

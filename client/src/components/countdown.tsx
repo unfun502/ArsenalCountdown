@@ -337,9 +337,9 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
               ))}
             </div>
             
-            {/* TV Channel - Using UK broadcaster for Premier League as an example */}
+            {/* TV Channel */}
             <div className="flex justify-center space-x-1">
-              {"WATCH ON SKY SPORTS".split('').map((char, index) => (
+              {"PEACOCK".split('').map((char, index) => (
                 <SplitFlapChar 
                   key={`channel-${index}`} 
                   value={char} 
