@@ -58,15 +58,13 @@ const SplitFlapDigit = ({
 // Split flap cell component for letters and other characters
 const SplitFlapChar = ({ 
   value, 
-  initialAnimation = false,
-  small = false
+  initialAnimation = false
 }: { 
   value: string, 
-  initialAnimation?: boolean,
-  small?: boolean
+  initialAnimation?: boolean
 }) => {
   return (
-    <div className={`splitflap-cell ${small ? 'text-small' : ''}`}>
+    <div className="splitflap-cell">
       <div className="splitflap-dot left"></div>
       <div className="splitflap-dot right"></div>
       <div className={`splitflap-number ${initialAnimation ? 'splitflap-init-animate' : ''}`}>
@@ -242,7 +240,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
         </div>
         
         <div className="splitflap-display mb-6">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <div className="grid grid-cols-4 gap-4">
             {timeUnits.map((unit) => (
               <TimeUnit 
                 key={unit.label} 
@@ -259,31 +257,29 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
         <div className="splitflap-display mt-6">
           <div className="flex flex-col space-y-4">
             {/* Day of Week */}
-            <div className="flex justify-center space-x-[2px] md:space-x-1">
+            <div className="flex justify-center space-x-1">
               {dayOfWeek.split('').map((char, index) => (
                 <SplitFlapChar 
                   key={`day-${index}`} 
                   value={char} 
                   initialAnimation={initialLoad}
-                  small={true}
                 />
               ))}
             </div>
             
             {/* Date (without year) */}
-            <div className="flex justify-center space-x-[2px] md:space-x-1">
+            <div className="flex justify-center space-x-1">
               {matchDateFormatted.split('').map((char, index) => (
                 <SplitFlapChar 
                   key={`date-${index}`} 
                   value={char} 
                   initialAnimation={initialLoad}
-                  small={true}
                 />
               ))}
             </div>
             
             {/* Match Time */}
-            <div className="flex justify-center space-x-[2px] md:space-x-1">
+            <div className="flex justify-center space-x-1">
               <SplitFlapDigit 
                 value={hours[0]} 
                 initialAnimation={initialLoad}
@@ -294,7 +290,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                 initialAnimation={initialLoad}
                 shouldAnimate={false}
               />
-              <SplitFlapChar value=":" initialAnimation={initialLoad} small={true} />
+              <SplitFlapChar value=":" initialAnimation={initialLoad} />
               <SplitFlapDigit 
                 value={minutes[0]} 
                 initialAnimation={initialLoad}
@@ -305,13 +301,12 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                 initialAnimation={initialLoad}
                 shouldAnimate={false}
               />
-              <SplitFlapChar value=" " initialAnimation={initialLoad} small={true} />
+              <SplitFlapChar value=" " initialAnimation={initialLoad} />
               {ampm.split('').map((char, index) => (
                 <SplitFlapChar 
                   key={`ampm-${index}`} 
                   value={char} 
                   initialAnimation={initialLoad}
-                  small={true}
                 />
               ))}
             </div>
@@ -326,13 +321,12 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
               const opponentName = match.awayTeam.toUpperCase();
               if (opponentName.length <= 12) {
                 return (
-                  <div className="flex justify-center space-x-[2px] md:space-x-1">
+                  <div className="flex justify-center space-x-1">
                     {opponentName.split('').map((char, index) => (
                       <SplitFlapChar 
                         key={`opponent-${index}`} 
                         value={char} 
                         initialAnimation={initialLoad}
-                        small={true}
                       />
                     ))}
                   </div>
@@ -345,23 +339,21 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                 
                 return (
                   <>
-                    <div className="flex justify-center space-x-[2px] md:space-x-1">
+                    <div className="flex justify-center space-x-1">
                       {firstLine.split('').map((char, index) => (
                         <SplitFlapChar 
                           key={`opponent1-${index}`} 
                           value={char} 
                           initialAnimation={initialLoad}
-                          small={true}
                         />
                       ))}
                     </div>
-                    <div className="flex justify-center space-x-[2px] md:space-x-1">
+                    <div className="flex justify-center space-x-1">
                       {secondLine.split('').map((char, index) => (
                         <SplitFlapChar 
                           key={`opponent2-${index}`} 
                           value={char} 
                           initialAnimation={initialLoad}
-                          small={true}
                         />
                       ))}
                     </div>
@@ -378,48 +370,44 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
             {/* Competition Name - Split into two lines */}
             {match.competition === "Premier League" ? (
               <>
-                <div className="flex justify-center space-x-[2px] md:space-x-1">
+                <div className="flex justify-center space-x-1">
                   {"PREMIER".split('').map((char, index) => (
                     <SplitFlapChar 
                       key={`competition1-${index}`} 
                       value={char} 
                       initialAnimation={initialLoad}
-                      small={true}
                     />
                   ))}
                 </div>
-                <div className="flex justify-center space-x-[2px] md:space-x-1">
+                <div className="flex justify-center space-x-1">
                   {"LEAGUE".split('').map((char, index) => (
                     <SplitFlapChar 
                       key={`competition2-${index}`} 
                       value={char} 
                       initialAnimation={initialLoad}
-                      small={true}
                     />
                   ))}
                 </div>
               </>
             ) : (
-              <div className="flex justify-center space-x-[2px] md:space-x-1">
+              <div className="flex justify-center space-x-1">
                 {match.competition.toUpperCase().split('').map((char, index) => (
                   <SplitFlapChar 
                     key={`competition-${index}`} 
                     value={char} 
                     initialAnimation={initialLoad}
-                    small={true}
                   />
                 ))}
               </div>
             )}
             
             {/* TV Channel */}
-            <div className="flex justify-center space-x-[2px] md:space-x-1">
+            <div className="flex justify-center space-x-1">
               {"PEACOCK".split('').map((char, index) => (
                 <SplitFlapChar 
                   key={`channel-${index}`} 
                   value={char} 
                   initialAnimation={initialLoad}
-                  small={true}
                 />
               ))}
             </div>
