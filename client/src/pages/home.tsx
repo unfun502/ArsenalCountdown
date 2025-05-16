@@ -67,9 +67,9 @@ export default function Home() {
               Add to Calendar
             </Button>
             
-            {/* Add audio element directly to the page for testing */}
+            {/* Testing the sound - can be removed when sound is working properly */}
             <div className="mt-4">
-              <audio controls src="/sounds/splitflap-click.mp3" id="clickSound" preload="auto"></audio>
+              <audio controls src="/sounds/flipcard.mp3" id="clickSound" preload="auto"></audio>
             </div>
             
             <div className="text-white/50 text-sm mt-4">

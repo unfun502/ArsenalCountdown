@@ -5,8 +5,7 @@ import { format } from "date-fns";
 import { atcb_action } from "add-to-calendar-button";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon } from "lucide-react";
-// Import click sound directly
-import clickSoundSrc from "../assets/splitflap-click.mp3";
+// Remove direct import as we'll use the audio element from the DOM
 
 interface CountdownProps {
   kickoff: Date;
@@ -32,34 +31,12 @@ const SplitFlapDigit = ({
   const [displayValue, setDisplayValue] = useState(value);
   const prevValueRef = useRef(value);
   
-  // Reference to the click sound
-  const clickSound = useRef<HTMLAudioElement | null>(null);
-  
-  // Load the sound once at the application level
-  useEffect(() => {
-    // Check if audio context is supported
-    if (typeof window !== 'undefined' && window.AudioContext) {
-      // Create sound only if it doesn't exist yet
-      if (!clickSound.current) {
-        const sound = new Audio();
-        sound.src = '/sounds/splitflap-click.mp3';
-        sound.volume = 0.5;
-        sound.preload = 'auto';
-        clickSound.current = sound;
-      }
-    }
-  }, []);
+  // Sound is no longer handled here
   
   // Handle normal flipping when digit changes (like seconds)
   useEffect(() => {
     // Only animate if the value has changed and should animate
     if (prevValueRef.current !== value && shouldAnimate) {
-      // Play click sound
-      if (clickSound.current) {
-        clickSound.current.currentTime = 0; // Reset audio position
-        clickSound.current.play().catch(e => console.log("Audio play error:", e));
-      }
-      
       // Simple flip animation without cycling through numbers
       prevValueRef.current = value;
       setDisplayValue(value);
@@ -102,12 +79,6 @@ const SplitFlapChar = ({
   useEffect(() => {
     if (value !== prevValue) {
       setIsFlipping(true);
-      
-      // Play click sound
-      if (clickSound.current) {
-        clickSound.current.currentTime = 0;
-        clickSound.current.play().catch(e => console.log("Audio play error:", e));
-      }
       
       const timer = setTimeout(() => {
         setIsFlipping(false);
