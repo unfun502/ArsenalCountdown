@@ -69,7 +69,7 @@ export default function Home() {
             
             {/* Testing the sound - can be removed when sound is working properly */}
             <div className="mt-4">
-              <audio controls src="/sounds/flipcard.mp3" id="clickSound" preload="auto"></audio>
+              <audio controls src="/flipcard-sound.mp3" id="clickSound" preload="auto"></audio>
             </div>
             
             <div className="text-white/50 text-sm mt-4">
