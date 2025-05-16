@@ -1,7 +1,7 @@
 
 {
-  "variant": "default",
+  "variant": "vibrant",
   "primary": "#FF0000",
-  "appearance": "light",
+  "appearance": "dark",
   "radius": 0.25
 }

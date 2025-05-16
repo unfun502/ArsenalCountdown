@@ -4,65 +4,15 @@
 @tailwind components;
 @tailwind utilities;
 
-@keyframes flipTop {
-  0% { transform: rotateX(0deg); }
-  100% { transform: rotateX(-90deg); }
-}
-
-@keyframes flipBottom {
-  0% { transform: rotateX(90deg); }
-  100% { transform: rotateX(0deg); }
-}
-
-.split-flap {
-  perspective: 400px;
-  position: relative;
-  height: 60px;
-  background: #1a1a1a;
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.split-flap-top,
-.split-flap-bottom {
-  position: absolute;
-  width: 100%;
-  height: 50%;
-  overflow: hidden;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #1a1a1a;
-}
-
-.split-flap-top {
-  transform-origin: bottom;
-  top: 0;
-  border-top-left-radius: 6px;
-  border-top-right-radius: 6px;
-}
-
-.split-flap-bottom {
-  transform-origin: top;
-  bottom: 0;
-  border-bottom-left-radius: 6px;
-  border-bottom-right-radius: 6px;
-}
-
-.flip {
-  animation: flipTop 0.6s ease-in;
-}
-
-.flop {
-  animation: flipBottom 0.6s ease-out;
-}
-
 @layer base {
   :root {
     --codepen-black: #131417;
     --codepen-teal: #47cf73;
     --codepen-blue: #0ebeff;
     --codepen-purple: #ae63e4;
+    --splitflap-bg: #2C3033;
+    --splitflap-text: #FFFFFF;
+    --splitflap-dot-color: #FF6A00;
   }
 
   * {
@@ -72,8 +22,8 @@
   body {
     font-family: 'Lato', sans-serif;
     @apply antialiased min-h-screen;
-    background-color: #ffffff;
-    color: #000000;
+    background-color: #1E1E1E;
+    color: #FFFFFF;
   }
 
   h1 {
@@ -97,5 +47,141 @@
   button {
     font-family: 'Lato', sans-serif;
     font-weight: 700;
+  }
+}
+
+@layer components {
+  /* Split Flap Board Styling */
+  .splitflap-display {
+    background-color: var(--splitflap-bg);
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .splitflap-unit {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .splitflap-unit-label {
+    color: white;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 14px;
+    margin-top: 8px;
+  }
+
+  .splitflap-digits {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .splitflap-cell {
+    position: relative;
+    width: 56px;
+    height: 80px;
+    background-color: #222528;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+  }
+
+  /* Horizontal divider line in the middle of each cell */
+  .splitflap-cell::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 1px;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 5;
+  }
+
+  /* Lighting effect on the cell */
+  .splitflap-cell::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      0deg, 
+      rgba(0, 0, 0, 0.6) 0%, 
+      rgba(0, 0, 0, 0) 20%, 
+      rgba(255, 255, 255, 0.1) 50%, 
+      rgba(0, 0, 0, 0) 80%, 
+      rgba(0, 0, 0, 0.6) 100%
+    );
+    pointer-events: none;
+  }
+
+  .splitflap-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 48px;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Orange indicator dots like in the reference image */
+  .splitflap-dot {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background-color: var(--splitflap-dot-color);
+    border-radius: 50%;
+    top: 6px;
+    z-index: 10;
+  }
+
+  .splitflap-dot.left {
+    left: 6px;
+  }
+
+  .splitflap-dot.right {
+    right: 6px;
+  }
+
+  /* Animation for the initial load - spinning effect */
+  @keyframes initFlip {
+    0% { transform: perspective(800px) rotateX(0deg); }
+    20% { transform: perspective(800px) rotateX(180deg); }
+    40% { transform: perspective(800px) rotateX(360deg); }
+    60% { transform: perspective(800px) rotateX(540deg); }
+    80% { transform: perspective(800px) rotateX(720deg); }
+    100% { transform: perspective(800px) rotateX(0deg); }
+  }
+
+  .splitflap-init-animate {
+    animation: initFlip 2s ease-in-out;
+    perspective: 800px;
+    transform-style: preserve-3d;
+    transform-origin: center center;
+  }
+
+  /* Animation for changing digits */
+  @keyframes flipDigit {
+    0% { transform: rotateX(0deg); opacity: 1; }
+    50% { transform: rotateX(90deg); opacity: 0.5; }
+    100% { transform: rotateX(0deg); opacity: 1; }
+  }
+
+  .flip-enter-active {
+    animation: flipDigit 0.3s ease-in-out;
+    transform-origin: center center;
+    backface-visibility: hidden;
   }
 }
