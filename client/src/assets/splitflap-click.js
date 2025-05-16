@@ -6,10 +6,37 @@ let soundEnabled = false;
 export const initSplitFlapSound = () => {
   if (!flipAudio) {
     console.log("Initializing split-flap sound effect");
-    // Try the newer sound first, fallback to the older one if needed
-    flipAudio = new Audio('/sounds/flipcard.mp3'); // Using the older sound file which should work
-    flipAudio.volume = 0.3; // Lower volume to avoid it being too loud
-    flipAudio.preload = 'auto'; // Preload for better performance
+    
+    // Try sound files in different locations (Vite serves files from public/ directly)
+    const possibleSoundPaths = [
+      '/splitflap-analog.mp3',
+      '/splitflap-click.mp3',
+      '/sounds/splitflap-analog.mp3',
+      '/sounds/splitflap-click.mp3'
+    ];
+    
+    for (const path of possibleSoundPaths) {
+      try {
+        console.log("Trying to load sound from:", path);
+        const audio = new Audio(path);
+        
+        audio.addEventListener('canplaythrough', () => {
+          console.log("Sound loaded successfully from:", path);
+          flipAudio = audio;
+          flipAudio.volume = 0.8; // Increased volume for better audibility
+          flipAudio.preload = 'auto';
+        });
+        
+        audio.addEventListener('error', (e) => {
+          console.error("Failed to load sound from:", path, e);
+        });
+        
+        // If the first sound loads, we can break the loop
+        break;
+      } catch (e) {
+        console.error("Error creating audio for path:", path, e);
+      }
+    }
   }
 };
 
