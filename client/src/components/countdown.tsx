@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { atcb_action } from "add-to-calendar-button";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon } from "lucide-react";
+import { playSplitFlapSound, enableSound, isSoundEnabled } from "@/assets/splitflap-click";
 
 interface CountdownProps {
   kickoff: Date;
