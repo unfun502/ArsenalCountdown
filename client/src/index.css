@@ -55,7 +55,8 @@
   @media (min-width: 768px) {
     .fixed-width-panel {
       display: flex;
-      justify-content: center;
+      /* Changed from center to flex-start for left alignment */
+      justify-content: flex-start;
       margin: 0 auto;
       width: 560px; /* 10 flaps x 56px width */
     }
