@@ -333,7 +333,21 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
     if (savedSoundState === 'on') {
       setSoundOn(true);
       enableSound();
+      console.log("Sound enabled from saved preference");
     }
+    
+    // Debug audio file availability
+    fetch('/sounds/typewriter-click.wav')
+      .then(res => {
+        console.log('Click WAV fetch result:', res.status, res.statusText);
+      })
+      .catch(e => console.error('Click WAV fetch error:', e));
+      
+    fetch('/sounds/typewriter-click.mp3')
+      .then(res => {
+        console.log('Click MP3 fetch result:', res.status, res.statusText);
+      })
+      .catch(e => console.error('Click MP3 fetch error:', e));
   }, []);
 
   // Function to play the main typewriter click sound
