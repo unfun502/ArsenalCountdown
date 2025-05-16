@@ -353,13 +353,25 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
   // Function to play the main typewriter click sound
   const playClickSound = () => {
     if (!soundOn) return;
-    playTypewriterClickSound();
+    
+    // Define direct audio play function for higher reliability
+    new Audio('/sounds/type.mp3').play()
+      .catch(err => {
+        console.error('Direct audio play failed, trying fallback:', err);
+        playTypewriterClickSound();
+      });
   };
   
   // Function to play the lighter key sound
   const playKeySound = () => {
     if (!soundOn) return;
-    playTypewriterKeySound();
+    
+    // Define direct audio play function for higher reliability
+    new Audio('/sounds/type.mp3').play()
+      .catch(err => {
+        console.error('Direct audio play failed, trying fallback:', err);
+        playTypewriterKeySound();
+      });
   };
     
   // Handle toggling sound on/off
@@ -374,8 +386,25 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
       enableSound();
       localStorage.setItem('arsenal-countdown-sound', 'on');
       
-      // Play a demo sound to confirm it works
-      setTimeout(() => playTypewriterClickSound(), 100);
+      // Play a demo sound to confirm it works - this must be done with a delay
+      // to ensure it happens after the click event is fully processed
+      setTimeout(() => {
+        // Try to play a sound directly
+        try {
+          const demoSound = new Audio('/sounds/type.mp3');
+          demoSound.volume = 0.5;
+          const playPromise = demoSound.play();
+          console.log("Demo sound play attempted");
+          
+          if (playPromise !== undefined) {
+            playPromise
+              .then(() => console.log("Demo sound played successfully"))
+              .catch(e => console.error("Demo sound play failed:", e));
+          }
+        } catch (e) {
+          console.error("Error playing demo sound:", e);
+        }
+      }, 100);
     } else {
       console.log("Sound disabled");
       disableSound();
