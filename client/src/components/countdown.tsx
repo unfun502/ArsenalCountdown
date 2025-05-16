@@ -294,14 +294,59 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
         {/* Title using split flap display */}
         <div className="mb-6">
           <div className="splitflap-display py-3">
-            <div className="flex justify-center space-x-1">
-              {"ARSENAL".split('').map((char, index) => (
-                <SplitFlapChar 
-                  key={`title-${index}`} 
-                  value={char} 
-                  initialAnimation={initialLoad}
-                />
-              ))}
+            <div className="flex justify-center space-x-1 md:fixed-width-panel">
+              {(() => {
+                const text = "ARSENAL";
+                
+                // For mobile, just render the characters normally
+                if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                  return text.split('').map((char: string, index: number) => (
+                    <SplitFlapChar 
+                      key={`title-${index}`} 
+                      value={char} 
+                      initialAnimation={initialLoad}
+                    />
+                  ));
+                }
+                
+                // For desktop, ensure exactly 10 cells with centered text
+                const chars = text.split('');
+                const totalChars = chars.length;
+                const emptyFlapsNeeded = 10 - totalChars;
+                
+                // Calculate left and right padding
+                const leftPadding = Math.floor(emptyFlapsNeeded / 2);
+                const rightPadding = emptyFlapsNeeded - leftPadding; // Handle odd number correctly
+                
+                return (
+                  <>
+                    {/* Left empty flaps */}
+                    {Array(leftPadding).fill(0).map((_, i) => (
+                      <div key={`title-left-empty-${i}`} className="empty-flap">
+                        <div className="splitflap-dot left"></div>
+                        <div className="splitflap-dot right"></div>
+                      </div>
+                    ))}
+                    
+                    {/* Actual characters */}
+                    {chars.map((char: string, index: number) => (
+                      <SplitFlapChar 
+                        key={`title-${index}`} 
+                        value={char} 
+                        initialAnimation={initialLoad}
+                      />
+                    ))}
+                    
+                    {/* Right empty flaps */}
+                    {Array(rightPadding).fill(0).map((_, i) => (
+                      <div key={`title-right-empty-${i}`} className="empty-flap">
+                        <div className="splitflap-dot left"></div>
+                        <div className="splitflap-dot right"></div>
+                      </div>
+                    ))}
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>
