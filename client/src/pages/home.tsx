@@ -67,10 +67,7 @@ export default function Home() {
               Add to Calendar
             </Button>
             
-            {/* Audio control hidden for cleaner design */}
-            <div className="hidden">
-              <audio src="/split-flap.wav" id="clickSound" preload="auto"></audio>
-            </div>
+
             
             <div className="text-white/50 text-sm mt-4">
               <p>© {new Date().getFullYear()} Arsenal Match Countdown</p>

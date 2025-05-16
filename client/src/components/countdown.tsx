@@ -5,8 +5,6 @@ import { format } from "date-fns";
 import { atcb_action } from "add-to-calendar-button";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon } from "lucide-react";
-// Import our sound utilities
-import { playSplitFlapSound, stopSplitFlapSound } from "../assets/splitflap-click.js";
 
 interface CountdownProps {
   kickoff: Date;
@@ -168,8 +166,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
   // Initial animation that cycles through random numbers more slowly
   useEffect(() => {
     if (initialLoad) {
-      // Play the split flap sound during initial animation
-      playSplitFlapSound();
+      // Initial animation plays here
       
       // Generate random digits during the initial animation
       const generateRandomDigits = () => {
@@ -192,8 +189,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
         clearInterval(interval);
         setInitialLoad(false);
         
-        // Stop the sound when animation ends
-        stopSplitFlapSound();
+        // Animation ends here
       }, 2000);
       
       return () => {
@@ -202,8 +198,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
           clearTimeout(initialAnimationRef.current);
         }
         
-        // Stop the sound if component unmounts
-        stopSplitFlapSound();
+        // Cleanup if component unmounts
       };
     }
   }, [initialLoad]);
