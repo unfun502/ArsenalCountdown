@@ -347,14 +347,58 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
         <div className="splitflap-display mt-6">
           <div className="flex flex-col space-y-4">
             {/* Day of Week */}
-            <div className="flex justify-center space-x-1">
-              {dayOfWeek.split('').map((char, index) => (
-                <SplitFlapChar 
-                  key={`day-${index}`} 
-                  value={char} 
-                  initialAnimation={initialLoad}
-                />
-              ))}
+            {/* Day of Week - Fixed Width Panel for Desktop */}
+            <div className="flex justify-center space-x-1 md:fixed-width-panel">
+              {(() => {
+                // For mobile, just render the characters normally
+                if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                  return dayOfWeek.split('').map((char: string, index: number) => (
+                    <SplitFlapChar 
+                      key={`day-${index}`} 
+                      value={char} 
+                      initialAnimation={initialLoad}
+                    />
+                  ));
+                }
+                
+                // For desktop, ensure exactly 10 cells with centered text
+                const chars = dayOfWeek.split('');
+                const totalChars = chars.length;
+                const emptyFlapsNeeded = 10 - totalChars;
+                
+                // Calculate left and right padding
+                const leftPadding = Math.floor(emptyFlapsNeeded / 2);
+                const rightPadding = emptyFlapsNeeded - leftPadding; // Handle odd number correctly
+                
+                return (
+                  <>
+                    {/* Left empty flaps */}
+                    {Array(leftPadding).fill(0).map((_, i) => (
+                      <div key={`left-empty-${i}`} className="empty-flap">
+                        <div className="splitflap-dot left"></div>
+                        <div className="splitflap-dot right"></div>
+                      </div>
+                    ))}
+                    
+                    {/* Actual characters */}
+                    {chars.map((char: string, index: number) => (
+                      <SplitFlapChar 
+                        key={`day-${index}`} 
+                        value={char} 
+                        initialAnimation={initialLoad}
+                      />
+                    ))}
+                    
+                    {/* Right empty flaps */}
+                    {Array(rightPadding).fill(0).map((_, i) => (
+                      <div key={`right-empty-${i}`} className="empty-flap">
+                        <div className="splitflap-dot left"></div>
+                        <div className="splitflap-dot right"></div>
+                      </div>
+                    ))}
+                  </>
+                );
+              })()}
             </div>
             
             {/* Date (without year) */}

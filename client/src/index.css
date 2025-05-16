@@ -51,6 +51,58 @@
 }
 
 @layer components {
+  /* Fixed-width panel styles for desktop */
+  @media (min-width: 768px) {
+    .fixed-width-panel {
+      display: flex;
+      justify-content: center;
+      margin: 0 auto;
+      width: 560px; /* 10 flaps x 56px width */
+    }
+    
+    .empty-flap {
+      position: relative;
+      width: 56px;
+      height: 80px;
+      background-color: #222528;
+      border-radius: 4px;
+      margin: 0 2px;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+    }
+    
+    /* Horizontal divider line for empty flaps */
+    .empty-flap::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      height: 1px;
+      background: rgba(0, 0, 0, 0.3);
+      z-index: 5;
+    }
+    
+    /* Lighting effect on empty flaps */
+    .empty-flap::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(
+        0deg, 
+        rgba(0, 0, 0, 0.6) 0%, 
+        rgba(0, 0, 0, 0) 20%, 
+        rgba(255, 255, 255, 0.1) 50%, 
+        rgba(0, 0, 0, 0) 80%, 
+        rgba(0, 0, 0, 0.6) 100%
+      );
+      pointer-events: none;
+    }
+  }
+  
   /* Split Flap Board Styling */
   .splitflap-display {
     background-color: var(--splitflap-bg);
