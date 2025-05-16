@@ -15,25 +15,50 @@ interface TimeLeft {
 
 // Split flap cell component for individual digits
 const SplitFlapDigit = ({ value, initialAnimation = false }: { value: string, initialAnimation?: boolean }) => {
+  const [displayValue, setDisplayValue] = useState(value);
   const [animating, setAnimating] = useState(initialAnimation);
   const prevValueRef = useRef(value);
+  const animationFramesRef = useRef<number>(0);
+  const requestRef = useRef<number>();
   
   useEffect(() => {
-    // Animate when value changes
-    if (prevValueRef.current !== value) {
+    // Function to cycle through numbers when animating
+    const cycleNumbers = () => {
+      if (animationFramesRef.current < 10) {
+        // Cycle through numbers 0-9 rapidly
+        const randomDigit = Math.floor(Math.random() * 10).toString();
+        setDisplayValue(randomDigit);
+        animationFramesRef.current++;
+        requestRef.current = requestAnimationFrame(cycleNumbers);
+      } else {
+        // End animation and show final value
+        setDisplayValue(value);
+        setAnimating(false);
+        animationFramesRef.current = 0;
+      }
+    };
+
+    // Start animation when value changes
+    if (prevValueRef.current !== value && !initialAnimation) {
       setAnimating(true);
-      const timer = setTimeout(() => setAnimating(false), 300);
+      animationFramesRef.current = 0;
+      requestRef.current = requestAnimationFrame(cycleNumbers);
       prevValueRef.current = value;
-      return () => clearTimeout(timer);
     }
-  }, [value]);
+
+    return () => {
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
+      }
+    };
+  }, [value, initialAnimation]);
 
   return (
-    <div className={`splitflap-cell ${initialAnimation ? 'splitflap-init-animate' : ''}`}>
+    <div className="splitflap-cell">
       <div className="splitflap-dot left"></div>
       <div className="splitflap-dot right"></div>
-      <div className={`splitflap-number ${animating ? 'flip-enter-active' : ''}`}>
-        {value}
+      <div className={`splitflap-number ${initialAnimation ? 'splitflap-init-animate' : ''} ${animating ? 'number-cycling' : ''}`}>
+        {displayValue}
       </div>
     </div>
   );
@@ -59,15 +84,45 @@ const TimeUnit = ({ label, value, initialAnimation }: { label: string, value: nu
 export default function Countdown({ kickoff }: CountdownProps) {
   const [timeLeft, setTimeLeft] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [initialLoad, setInitialLoad] = useState(true);
+  const [fakeDigits, setFakeDigits] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const initialAnimationRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Initial animation that cycles through random numbers
   useEffect(() => {
-    // Initial animation effect
     if (initialLoad) {
-      setTimeout(() => {
+      // Generate random digits during the initial animation
+      const generateRandomDigits = () => {
+        setFakeDigits({
+          days: Math.floor(Math.random() * 99),
+          hours: Math.floor(Math.random() * 24),
+          minutes: Math.floor(Math.random() * 60), 
+          seconds: Math.floor(Math.random() * 60)
+        });
+      };
+      
+      // Start with random digits
+      generateRandomDigits();
+      
+      // Update random digits every 100ms for a spinning effect
+      const interval = setInterval(generateRandomDigits, 100);
+      
+      // End the initial animation after 2 seconds
+      initialAnimationRef.current = setTimeout(() => {
+        clearInterval(interval);
         setInitialLoad(false);
-      }, 2000); // Run initial animation for 2 seconds
+      }, 2000);
+      
+      return () => {
+        clearInterval(interval);
+        if (initialAnimationRef.current) {
+          clearTimeout(initialAnimationRef.current);
+        }
+      };
     }
-    
+  }, [initialLoad]);
+  
+  // Regular countdown logic
+  useEffect(() => {
     const calculateTimeLeft = () => {
       const now = new Date();
       const diffInSeconds = Math.floor((kickoff.getTime() - now.getTime()) / 1000);
@@ -86,13 +141,16 @@ export default function Countdown({ kickoff }: CountdownProps) {
     const timer = setInterval(calculateTimeLeft, 1000);
 
     return () => clearInterval(timer);
-  }, [kickoff, initialLoad]);
+  }, [kickoff]);
 
+  // Choose between actual countdown and random values for initial animation
+  const displayValues = initialLoad ? fakeDigits : timeLeft;
+  
   const timeUnits = [
-    { label: "DAYS", value: timeLeft.days },
-    { label: "HOURS", value: timeLeft.hours },
-    { label: "MINS", value: timeLeft.minutes },
-    { label: "SECS", value: timeLeft.seconds }
+    { label: "DAYS", value: displayValues.days },
+    { label: "HOURS", value: displayValues.hours },
+    { label: "MINS", value: displayValues.minutes },
+    { label: "SECS", value: displayValues.seconds }
   ];
 
   return (

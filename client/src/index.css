@@ -184,4 +184,16 @@
     transform-origin: center center;
     backface-visibility: hidden;
   }
+  
+  /* Animation for cycling through numbers */
+  @keyframes cycleNumbers {
+    0% { transform: perspective(800px) rotateX(0deg); }
+    100% { transform: perspective(800px) rotateX(360deg); }
+  }
+  
+  .number-cycling {
+    animation: cycleNumbers 0.1s linear infinite;
+    transform-origin: center center;
+    transform-style: preserve-3d;
+  }
 }
