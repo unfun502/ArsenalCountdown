@@ -47,7 +47,7 @@ export default function Home() {
         </div>
       ) : match ? (
         <div className="space-y-8 w-full max-w-2xl">
-          <Countdown kickoff={new Date(match.kickoff)} />
+          <Countdown kickoff={new Date(match.kickoff)} match={match} />
           <MatchDetails match={match} />
           
           <div className="text-center text-white/50 text-sm mt-8">

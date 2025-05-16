@@ -122,7 +122,7 @@ const TimeUnit = ({
   );
 };
 
-export default function Countdown({ kickoff }: CountdownProps) {
+export default function Countdown({ kickoff, match }: CountdownProps & { match: any }) {
   const [timeLeft, setTimeLeft] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [prevTimeLeft, setPrevTimeLeft] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [initialLoad, setInitialLoad] = useState(true);
@@ -250,7 +250,7 @@ export default function Countdown({ kickoff }: CountdownProps) {
           </div>
         </div>
         
-        {/* Match Details Panel */}
+        {/* Match Date Panel */}
         <div className="splitflap-display mt-6">
           <div className="flex flex-col space-y-4">
             {/* Day of Week */}
@@ -302,6 +302,46 @@ export default function Countdown({ kickoff }: CountdownProps) {
               {ampm.split('').map((char, index) => (
                 <SplitFlapChar 
                   key={`ampm-${index}`} 
+                  value={char} 
+                  initialAnimation={initialLoad}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+        
+        {/* Opponent Name Panel */}
+        <div className="splitflap-display mt-6">
+          <div className="flex justify-center space-x-1">
+            {match.awayTeam.toUpperCase().split('').map((char, index) => (
+              <SplitFlapChar 
+                key={`opponent-${index}`} 
+                value={char} 
+                initialAnimation={initialLoad}
+              />
+            ))}
+          </div>
+        </div>
+        
+        {/* Competition and TV Channel Panel */}
+        <div className="splitflap-display mt-6">
+          <div className="flex flex-col space-y-4">
+            {/* Competition Name */}
+            <div className="flex justify-center space-x-1">
+              {match.competition.toUpperCase().split('').map((char, index) => (
+                <SplitFlapChar 
+                  key={`competition-${index}`} 
+                  value={char} 
+                  initialAnimation={initialLoad}
+                />
+              ))}
+            </div>
+            
+            {/* TV Channel - Using UK broadcaster for Premier League as an example */}
+            <div className="flex justify-center space-x-1">
+              {"WATCH ON SKY SPORTS".split('').map((char, index) => (
+                <SplitFlapChar 
+                  key={`channel-${index}`} 
                   value={char} 
                   initialAnimation={initialLoad}
                 />
