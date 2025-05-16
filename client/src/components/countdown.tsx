@@ -323,98 +323,29 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
   }, []);
   
   // Web Audio API context
-  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
+  // Initialize sounds system - load audio files and prepare for playback
+  useEffect(() => {
+    // Initialize sound system on component mount
+    initTypewriterSounds();
     
-  // Simple function to generate a click sound using Web Audio API
-  const generateClickSound = () => {
-    try {
-      if (!audioContext) {
-        // Create audio context on first use (requires user interaction)
-        const newContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-        setAudioContext(newContext);
-        console.log("Created new Audio Context");
-        return newContext;
-      }
-      return audioContext;
-    } catch (e) {
-      console.error("Failed to create audio context:", e);
-      return null;
+    // Initialize sound state from remembered user preference
+    const savedSoundState = localStorage.getItem('arsenal-countdown-sound');
+    if (savedSoundState === 'on') {
+      setSoundOn(true);
+      enableSound();
     }
-  };
-  
-  // Play a typewriter-like click sound using Web Audio API
+  }, []);
+
+  // Function to play the main typewriter click sound
   const playClickSound = () => {
     if (!soundOn) return;
-    
-    try {
-      console.log("Attempting to play typewriter sound with Web Audio API");
-      const ctx = audioContext || generateClickSound();
-      if (!ctx) return;
-      
-      // Create a more complex sound for typewriter effect
-      // Main click oscillator
-      const clickOsc = ctx.createOscillator();
-      clickOsc.type = 'square';
-      clickOsc.frequency.value = 1200;
-      
-      // Second oscillator for mechanical sound
-      const mechanicalOsc = ctx.createOscillator();
-      mechanicalOsc.type = 'triangle';
-      mechanicalOsc.frequency.value = 80;
-      
-      // Noise for the paper sound
-      const bufferSize = 2 * ctx.sampleRate;
-      const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const noise = noiseBuffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        noise[i] = Math.random() * 2 - 1;
-      }
-      const noiseSource = ctx.createBufferSource();
-      noiseSource.buffer = noiseBuffer;
-      
-      // Create gain nodes
-      const clickGain = ctx.createGain();
-      clickGain.gain.value = 0.3;
-      clickGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
-      
-      const mechanicalGain = ctx.createGain();
-      mechanicalGain.gain.value = 0.2;
-      mechanicalGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-      
-      const noiseGain = ctx.createGain();
-      noiseGain.gain.value = 0.1;
-      noiseGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
-      
-      // Filter for noise
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'bandpass';
-      filter.frequency.value = 800;
-      filter.Q.value = 0.7;
-      
-      // Connect everything
-      clickOsc.connect(clickGain);
-      mechanicalOsc.connect(mechanicalGain);
-      noiseSource.connect(filter);
-      filter.connect(noiseGain);
-      
-      clickGain.connect(ctx.destination);
-      mechanicalGain.connect(ctx.destination);
-      noiseGain.connect(ctx.destination);
-      
-      // Play sounds
-      clickOsc.start(ctx.currentTime);
-      clickOsc.stop(ctx.currentTime + 0.08);
-      
-      mechanicalOsc.start(ctx.currentTime + 0.01);
-      mechanicalOsc.stop(ctx.currentTime + 0.15);
-      
-      noiseSource.start(ctx.currentTime);
-      noiseSource.stop(ctx.currentTime + 0.1);
-      
-      console.log("Typewriter sound generated");
-    } catch (e) {
-      console.error("Error playing typewriter sound:", e);
-    }
+    playTypewriterClickSound();
+  };
+  
+  // Function to play the lighter key sound
+  const playKeySound = () => {
+    if (!soundOn) return;
+    playTypewriterKeySound();
   };
     
   // Handle toggling sound on/off
@@ -423,14 +354,18 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
     const newSoundState = !soundOn;
     setSoundOn(newSoundState);
     
-    // Initialize audio context (needs user interaction)
+    // Enable or disable sound system
     if (newSoundState) {
-      console.log("Sound enabled - initializing Web Audio system");
-      generateClickSound();
-      // Try to play a sound immediately to confirm it works
-      setTimeout(() => playClickSound(), 100);
+      console.log("Sound enabled - initializing typewriter sound system");
+      enableSound();
+      localStorage.setItem('arsenal-countdown-sound', 'on');
+      
+      // Play a demo sound to confirm it works
+      setTimeout(() => playTypewriterClickSound(), 100);
     } else {
       console.log("Sound disabled");
+      disableSound();
+      localStorage.setItem('arsenal-countdown-sound', 'off');
     }
     
     // Always trigger a full animation cycle to demonstrate the effect
