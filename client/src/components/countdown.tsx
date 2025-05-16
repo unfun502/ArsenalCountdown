@@ -309,14 +309,14 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                   ));
                 }
                 
-                // For desktop, ensure exactly 10 cells with centered text
+                // For desktop, ensure exactly 10 cells with left-aligned text
                 const chars = text.split('');
                 const totalChars = chars.length;
                 const emptyFlapsNeeded = 10 - totalChars;
                 
-                // Calculate left and right padding
-                const leftPadding = Math.floor(emptyFlapsNeeded / 2);
-                const rightPadding = emptyFlapsNeeded - leftPadding; // Handle odd number correctly
+                // For left alignment, no left padding needed
+                const leftPadding = 0;
+                const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
                 
                 return (
                   <>
@@ -406,14 +406,14 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                   ));
                 }
                 
-                // For desktop, ensure exactly 10 cells with centered text
+                // For desktop, ensure exactly 10 cells with left-aligned text
                 const chars = dayOfWeek.split('');
                 const totalChars = chars.length;
                 const emptyFlapsNeeded = 10 - totalChars;
                 
-                // Calculate left and right padding
-                const leftPadding = Math.floor(emptyFlapsNeeded / 2);
-                const rightPadding = emptyFlapsNeeded - leftPadding; // Handle odd number correctly
+                // For left alignment, no left padding needed
+                const leftPadding = 0;
+                const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
                 
                 return (
                   <>
@@ -466,8 +466,8 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                 const emptyFlapsNeeded = 10 - totalChars;
                 
                 // Calculate left and right padding
-                const leftPadding = Math.floor(emptyFlapsNeeded / 2);
-                const rightPadding = emptyFlapsNeeded - leftPadding; // Handle odd number correctly
+                const leftPadding = 0;
+                const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
                 
                 return (
                   <>
@@ -533,8 +533,8 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                 const emptyFlapsNeeded = 10 - totalComponents;
                 
                 // Calculate left and right padding
-                const leftPadding = Math.floor(emptyFlapsNeeded / 2);
-                const rightPadding = emptyFlapsNeeded - leftPadding; // Handle odd number correctly
+                const leftPadding = 0;
+                const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
                 
                 return (
                   <>
@@ -590,8 +590,8 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                       const emptyFlapsNeeded = 10 - totalChars;
                       
                       // Calculate left and right padding
-                      const leftPadding = Math.floor(emptyFlapsNeeded / 2);
-                      const rightPadding = emptyFlapsNeeded - leftPadding; // Handle odd number correctly
+                      const leftPadding = 0;
+                      const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
                       
                       return (
                         <>
@@ -651,8 +651,8 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                         const emptyFlapsNeeded = 10 - totalChars;
                         
                         // Calculate left and right padding
-                        const leftPadding = Math.floor(emptyFlapsNeeded / 2);
-                        const rightPadding = emptyFlapsNeeded - leftPadding; // Handle odd number correctly
+                        const leftPadding = 0;
+                        const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
                         
                         return (
                           <>
@@ -703,8 +703,8 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                         const emptyFlapsNeeded = 10 - totalChars;
                         
                         // Calculate left and right padding
-                        const leftPadding = Math.floor(emptyFlapsNeeded / 2);
-                        const rightPadding = emptyFlapsNeeded - leftPadding; // Handle odd number correctly
+                        const leftPadding = 0;
+                        const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
                         
                         return (
                           <>
@@ -770,8 +770,8 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                     const emptyFlapsNeeded = 10 - totalChars;
                     
                     // Calculate left and right padding
-                    const leftPadding = Math.floor(emptyFlapsNeeded / 2);
-                    const rightPadding = emptyFlapsNeeded - leftPadding; // Handle odd number correctly
+                    const leftPadding = 0;
+                    const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
                     
                     return (
                       <>
@@ -824,8 +824,8 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                     const emptyFlapsNeeded = 10 - totalChars;
                     
                     // Calculate left and right padding
-                    const leftPadding = Math.floor(emptyFlapsNeeded / 2);
-                    const rightPadding = emptyFlapsNeeded - leftPadding; // Handle odd number correctly
+                    const leftPadding = 0;
+                    const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
                     
                     return (
                       <>
@@ -880,8 +880,8 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                   const emptyFlapsNeeded = 10 - totalChars;
                   
                   // Calculate left and right padding
-                  const leftPadding = Math.floor(emptyFlapsNeeded / 2);
-                  const rightPadding = emptyFlapsNeeded - leftPadding; // Handle odd number correctly
+                  const leftPadding = 0;
+                  const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
                   
                   return (
                     <>
@@ -937,8 +937,8 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                 const emptyFlapsNeeded = 10 - totalChars;
                 
                 // Calculate left and right padding
-                const leftPadding = Math.floor(emptyFlapsNeeded / 2);
-                const rightPadding = emptyFlapsNeeded - leftPadding; // Handle odd number correctly
+                const leftPadding = 0;
+                const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
                 
                 return (
                   <>
