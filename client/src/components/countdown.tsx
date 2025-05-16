@@ -1,6 +1,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { format } from "date-fns";
 
 interface CountdownProps {
   kickoff: Date;
@@ -46,6 +47,25 @@ const SplitFlapDigit = ({
       <div className="splitflap-dot right"></div>
       <div className={`splitflap-number ${initialAnimation ? 'splitflap-init-animate' : ''} ${shouldAnimate && prevValueRef.current !== value ? 'flip-enter-active' : ''}`}>
         {displayValue}
+      </div>
+    </div>
+  );
+};
+
+// Split flap cell component for letters and other characters
+const SplitFlapChar = ({ 
+  value, 
+  initialAnimation = false
+}: { 
+  value: string, 
+  initialAnimation?: boolean
+}) => {
+  return (
+    <div className="splitflap-cell">
+      <div className="splitflap-dot left"></div>
+      <div className="splitflap-dot right"></div>
+      <div className={`splitflap-number ${initialAnimation ? 'splitflap-init-animate' : ''}`}>
+        {value}
       </div>
     </div>
   );
@@ -152,7 +172,7 @@ export default function Countdown({ kickoff }: CountdownProps) {
       if (diffInSeconds <= 0) return;
 
       // Save previous values before updating
-      setPrevTimeLeft({...timeLeft});
+      setPrevTimeLeft(timeLeft);
 
       const days = Math.floor(diffInSeconds / (24 * 60 * 60));
       const hours = Math.floor((diffInSeconds % (24 * 60 * 60)) / (60 * 60));
@@ -166,7 +186,7 @@ export default function Countdown({ kickoff }: CountdownProps) {
     const timer = setInterval(calculateTimeLeft, 1000);
 
     return () => clearInterval(timer);
-  }, [kickoff, timeLeft]);
+  }, [kickoff]);
 
   // Choose between actual countdown and random values for initial animation
   const displayValues = initialLoad ? fakeDigits : timeLeft;
@@ -178,12 +198,32 @@ export default function Countdown({ kickoff }: CountdownProps) {
     { label: "SECS", value: displayValues.seconds, prevValue: prevTimeLeft.seconds }
   ];
 
+  // Create day, date and time display for current time
+  const now = new Date();
+  const dayOfWeek = format(now, 'EEEE').toUpperCase();
+  const currentDate = format(now, 'MMM dd, yyyy').toUpperCase();
+  const currentTime = format(now, 'hh:mm:ss a').toUpperCase();
+  
+  // Format current time for split flap display
+  const [hours, minutes, secondsWithAMPM] = currentTime.split(':');
+  const [seconds, ampm] = secondsWithAMPM.split(' ');
+  
+  // Update every second
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTick(prev => prev + 1);
+    }, 1000);
+    
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <Card className="bg-transparent border-0 shadow-none">
       <CardContent className="p-0">
         <h2 className="text-lg font-semibold mb-4 text-white text-center">ARSENAL MATCH COUNTDOWN</h2>
         
-        <div className="splitflap-display">
+        <div className="splitflap-display mb-6">
           <div className="grid grid-cols-4 gap-4">
             {timeUnits.map((unit) => (
               <TimeUnit 
@@ -194,6 +234,70 @@ export default function Countdown({ kickoff }: CountdownProps) {
                 initialAnimation={initialLoad}
               />
             ))}
+          </div>
+        </div>
+        
+        {/* Day, Date and Time Panel */}
+        <div className="splitflap-display mt-6">
+          <div className="flex flex-col space-y-4">
+            {/* Day of Week */}
+            <div className="flex justify-center space-x-1">
+              {dayOfWeek.split('').map((char, index) => (
+                <SplitFlapChar 
+                  key={`day-${index}`} 
+                  value={char} 
+                  initialAnimation={initialLoad}
+                />
+              ))}
+            </div>
+            
+            {/* Date */}
+            <div className="flex justify-center space-x-1">
+              {currentDate.split('').map((char, index) => (
+                <SplitFlapChar 
+                  key={`date-${index}`} 
+                  value={char} 
+                  initialAnimation={initialLoad}
+                />
+              ))}
+            </div>
+            
+            {/* Time */}
+            <div className="flex justify-center space-x-1">
+              <SplitFlapDigit 
+                value={hours[0]} 
+                initialAnimation={initialLoad}
+                shouldAnimate={true}
+              />
+              <SplitFlapDigit 
+                value={hours[1]} 
+                initialAnimation={initialLoad}
+                shouldAnimate={true}
+              />
+              <SplitFlapChar value=":" initialAnimation={initialLoad} />
+              <SplitFlapDigit 
+                value={minutes[0]} 
+                initialAnimation={initialLoad}
+                shouldAnimate={true}
+              />
+              <SplitFlapDigit 
+                value={minutes[1]} 
+                initialAnimation={initialLoad}
+                shouldAnimate={true}
+              />
+              <SplitFlapChar value=":" initialAnimation={initialLoad} />
+              <SplitFlapDigit 
+                value={seconds[0]} 
+                initialAnimation={initialLoad}
+                shouldAnimate={true}
+              />
+              <SplitFlapDigit 
+                value={seconds[1]} 
+                initialAnimation={initialLoad}
+                shouldAnimate={true}
+              />
+              <SplitFlapChar value={ampm} initialAnimation={initialLoad} />
+            </div>
           </div>
         </div>
       </CardContent>
