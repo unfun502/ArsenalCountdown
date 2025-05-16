@@ -330,37 +330,78 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
     }
   };
   
-  // Play a click sound using Web Audio API
+  // Play a typewriter-like click sound using Web Audio API
   const playClickSound = () => {
     if (!soundOn) return;
     
     try {
-      console.log("Attempting to play click sound with Web Audio API");
+      console.log("Attempting to play typewriter sound with Web Audio API");
       const ctx = audioContext || generateClickSound();
       if (!ctx) return;
       
-      // Create an oscillator for a quick click sound
-      const oscillator = ctx.createOscillator();
-      const gainNode = ctx.createGain();
+      // Create a more complex sound for typewriter effect
+      // Main click oscillator
+      const clickOsc = ctx.createOscillator();
+      clickOsc.type = 'square';
+      clickOsc.frequency.value = 1200;
       
-      // Configure nodes
-      oscillator.type = 'triangle';
-      oscillator.frequency.setValueAtTime(800, ctx.currentTime);
-      oscillator.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.1);
+      // Second oscillator for mechanical sound
+      const mechanicalOsc = ctx.createOscillator();
+      mechanicalOsc.type = 'triangle';
+      mechanicalOsc.frequency.value = 80;
       
-      gainNode.gain.setValueAtTime(0.5, ctx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+      // Noise for the paper sound
+      const bufferSize = 2 * ctx.sampleRate;
+      const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const noise = noiseBuffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        noise[i] = Math.random() * 2 - 1;
+      }
+      const noiseSource = ctx.createBufferSource();
+      noiseSource.buffer = noiseBuffer;
       
-      // Connect nodes
-      oscillator.connect(gainNode);
-      gainNode.connect(ctx.destination);
+      // Create gain nodes
+      const clickGain = ctx.createGain();
+      clickGain.gain.value = 0.3;
+      clickGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
       
-      // Play sound
-      oscillator.start();
-      oscillator.stop(ctx.currentTime + 0.1);
-      console.log("Click sound generated");
+      const mechanicalGain = ctx.createGain();
+      mechanicalGain.gain.value = 0.2;
+      mechanicalGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+      
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.value = 0.1;
+      noiseGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+      
+      // Filter for noise
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = 800;
+      filter.Q.value = 0.7;
+      
+      // Connect everything
+      clickOsc.connect(clickGain);
+      mechanicalOsc.connect(mechanicalGain);
+      noiseSource.connect(filter);
+      filter.connect(noiseGain);
+      
+      clickGain.connect(ctx.destination);
+      mechanicalGain.connect(ctx.destination);
+      noiseGain.connect(ctx.destination);
+      
+      // Play sounds
+      clickOsc.start(ctx.currentTime);
+      clickOsc.stop(ctx.currentTime + 0.08);
+      
+      mechanicalOsc.start(ctx.currentTime + 0.01);
+      mechanicalOsc.stop(ctx.currentTime + 0.15);
+      
+      noiseSource.start(ctx.currentTime);
+      noiseSource.stop(ctx.currentTime + 0.1);
+      
+      console.log("Typewriter sound generated");
     } catch (e) {
-      console.error("Error playing click sound:", e);
+      console.error("Error playing typewriter sound:", e);
     }
   };
     
@@ -445,6 +486,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                         key={`title-${index}`} 
                         value={char} 
                         initialAnimation={initialLoad}
+                        playSound={playClickSound}
                       />
                     ))}
                     
@@ -597,6 +639,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                         key={`date-${index}`} 
                         value={char} 
                         initialAnimation={initialLoad}
+                        playSound={playClickSound}
                       />
                     ))}
                     
@@ -721,6 +764,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                               key={`opponent-${index}`} 
                               value={char} 
                               initialAnimation={initialLoad}
+                              playSound={playClickSound}
                             />
                           ))}
                           
@@ -753,6 +797,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                               key={`opponent1-${index}`} 
                               value={char} 
                               initialAnimation={initialLoad}
+                              playSound={playClickSound}
                             />
                           ));
                         }
@@ -805,6 +850,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                               key={`opponent2-${index}`} 
                               value={char} 
                               initialAnimation={initialLoad}
+                              playSound={playClickSound}
                             />
                           ));
                         }
@@ -926,6 +972,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                           key={`competition2-${index}`} 
                           value={char} 
                           initialAnimation={initialLoad}
+                          playSound={playClickSound}
                         />
                       ));
                     }
@@ -1068,6 +1115,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                         key={`channel-${index}`} 
                         value={char} 
                         initialAnimation={initialLoad}
+                        playSound={playClickSound}
                       />
                     ))}
                     
