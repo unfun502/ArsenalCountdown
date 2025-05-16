@@ -555,6 +555,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                       key={`day-${index}`} 
                       value={char} 
                       initialAnimation={initialLoad}
+                      playSound={playClickSound}
                     />
                   ));
                 }
@@ -918,6 +919,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                           key={`competition1-${index}`} 
                           value={char} 
                           initialAnimation={initialLoad}
+                          playSound={playClickSound}
                         />
                       ));
                     }
@@ -947,6 +949,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                             key={`competition1-${index}`} 
                             value={char} 
                             initialAnimation={initialLoad}
+                            playSound={playClickSound}
                           />
                         ))}
                         
@@ -1002,6 +1005,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                             key={`competition2-${index}`} 
                             value={char} 
                             initialAnimation={initialLoad}
+                            playSound={playClickSound}
                           />
                         ))}
                         
