@@ -221,7 +221,20 @@ export default function Countdown({ kickoff }: CountdownProps) {
   return (
     <Card className="bg-transparent border-0 shadow-none">
       <CardContent className="p-0">
-        <h2 className="text-lg font-semibold mb-4 text-white text-center">ARSENAL MATCH COUNTDOWN</h2>
+        {/* Title using split flap display */}
+        <div className="mb-6">
+          <div className="splitflap-display py-3">
+            <div className="flex justify-center space-x-1">
+              {"ARSENAL".split('').map((char, index) => (
+                <SplitFlapChar 
+                  key={`title-${index}`} 
+                  value={char} 
+                  initialAnimation={initialLoad}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
         
         <div className="splitflap-display mb-6">
           <div className="grid grid-cols-4 gap-4">
