@@ -1011,6 +1011,20 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
               })()}
             </div>
           </div>
+          
+          {/* Sound toggle button */}
+          <div className="mt-4 text-center">
+            <Button
+              variant="outline"
+              size="sm"
+              className={`rounded-full ${soundOn ? 'bg-green-900/50 border-green-500' : 'bg-black border-white/20'} text-white hover:bg-gray-900`}
+              onClick={toggleSound}
+              title={soundOn ? "Mute sound effects" : "Enable sound effects"}
+            >
+              {soundOn ? <Volume2 className="h-4 w-4 mr-2" /> : <VolumeX className="h-4 w-4 mr-2" />}
+              {soundOn ? "Sound On" : "Sound Off"}
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
