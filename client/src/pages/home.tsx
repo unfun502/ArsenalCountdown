@@ -67,6 +67,11 @@ export default function Home() {
               Add to Calendar
             </Button>
             
+            {/* Add audio element directly to the page for testing */}
+            <div className="mt-4">
+              <audio controls src="/sounds/splitflap-click.mp3" id="clickSound" preload="auto"></audio>
+            </div>
+            
             <div className="text-white/50 text-sm mt-4">
               <p>© {new Date().getFullYear()} Arsenal Match Countdown</p>
             </div>

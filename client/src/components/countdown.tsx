@@ -5,6 +5,8 @@ import { format } from "date-fns";
 import { atcb_action } from "add-to-calendar-button";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon } from "lucide-react";
+// Import click sound directly
+import clickSoundSrc from "../assets/splitflap-click.mp3";
 
 interface CountdownProps {
   kickoff: Date;
@@ -33,10 +35,19 @@ const SplitFlapDigit = ({
   // Reference to the click sound
   const clickSound = useRef<HTMLAudioElement | null>(null);
   
-  // Initialize sound on component mount
+  // Load the sound once at the application level
   useEffect(() => {
-    clickSound.current = new Audio('/sounds/splitflap-click.mp3');
-    clickSound.current.volume = 0.5; // Set volume to 50%
+    // Check if audio context is supported
+    if (typeof window !== 'undefined' && window.AudioContext) {
+      // Create sound only if it doesn't exist yet
+      if (!clickSound.current) {
+        const sound = new Audio();
+        sound.src = '/sounds/splitflap-click.mp3';
+        sound.volume = 0.5;
+        sound.preload = 'auto';
+        clickSound.current = sound;
+      }
+    }
   }, []);
   
   // Handle normal flipping when digit changes (like seconds)
