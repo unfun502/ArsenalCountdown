@@ -30,10 +30,25 @@ const SplitFlapDigit = ({
   const [displayValue, setDisplayValue] = useState(value);
   const prevValueRef = useRef(value);
   
+  // Reference to the click sound
+  const clickSound = useRef<HTMLAudioElement | null>(null);
+  
+  // Initialize sound on component mount
+  useEffect(() => {
+    clickSound.current = new Audio('/sounds/splitflap-click.mp3');
+    clickSound.current.volume = 0.5; // Set volume to 50%
+  }, []);
+  
   // Handle normal flipping when digit changes (like seconds)
   useEffect(() => {
     // Only animate if the value has changed and should animate
     if (prevValueRef.current !== value && shouldAnimate) {
+      // Play click sound
+      if (clickSound.current) {
+        clickSound.current.currentTime = 0; // Reset audio position
+        clickSound.current.play().catch(e => console.log("Audio play error:", e));
+      }
+      
       // Simple flip animation without cycling through numbers
       prevValueRef.current = value;
       setDisplayValue(value);
@@ -63,11 +78,46 @@ const SplitFlapChar = ({
   value: string, 
   initialAnimation?: boolean
 }) => {
+  const [prevValue, setPrevValue] = useState(value);
+  const [isFlipping, setIsFlipping] = useState(initialAnimation);
+  const clickSound = useRef<HTMLAudioElement | null>(null);
+  
+  // Initialize sound on component mount
+  useEffect(() => {
+    clickSound.current = new Audio('/sounds/splitflap-click.mp3');
+    clickSound.current.volume = 0.3; // Lower volume for characters
+  }, []);
+  
+  useEffect(() => {
+    if (value !== prevValue) {
+      setIsFlipping(true);
+      
+      // Play click sound
+      if (clickSound.current) {
+        clickSound.current.currentTime = 0;
+        clickSound.current.play().catch(e => console.log("Audio play error:", e));
+      }
+      
+      const timer = setTimeout(() => {
+        setIsFlipping(false);
+        setPrevValue(value);
+      }, 300); // Animation duration
+      
+      return () => clearTimeout(timer);
+    }
+  }, [value, prevValue]);
+  
+  useEffect(() => {
+    if (!initialAnimation) {
+      setPrevValue(value);
+    }
+  }, [initialAnimation, value]);
+  
   return (
     <div className="splitflap-cell">
       <div className="splitflap-dot left"></div>
       <div className="splitflap-dot right"></div>
-      <div className={`splitflap-number ${initialAnimation ? 'splitflap-init-animate' : ''}`}>
+      <div className={`splitflap-number ${initialAnimation ? 'splitflap-init-animate' : ''} ${isFlipping ? 'flip-enter-active' : ''}`}>
         {value}
       </div>
     </div>
