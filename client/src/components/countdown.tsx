@@ -312,30 +312,91 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
         
         {/* Opponent Name Panel */}
         <div className="splitflap-display mt-6">
-          <div className="flex justify-center space-x-1">
-            {match.awayTeam.toUpperCase().split('').map((char, index) => (
-              <SplitFlapChar 
-                key={`opponent-${index}`} 
-                value={char} 
-                initialAnimation={initialLoad}
-              />
-            ))}
+          <div className="flex flex-col space-y-4">
+            {(() => {
+              // Break opponent name into multiple lines if longer than 12 characters
+              const opponentName = match.awayTeam.toUpperCase();
+              if (opponentName.length <= 12) {
+                return (
+                  <div className="flex justify-center space-x-1">
+                    {opponentName.split('').map((char, index) => (
+                      <SplitFlapChar 
+                        key={`opponent-${index}`} 
+                        value={char} 
+                        initialAnimation={initialLoad}
+                      />
+                    ))}
+                  </div>
+                );
+              } else {
+                // Split into two lines
+                const midPoint = Math.ceil(opponentName.length / 2);
+                const firstLine = opponentName.substring(0, midPoint);
+                const secondLine = opponentName.substring(midPoint);
+                
+                return (
+                  <>
+                    <div className="flex justify-center space-x-1">
+                      {firstLine.split('').map((char, index) => (
+                        <SplitFlapChar 
+                          key={`opponent1-${index}`} 
+                          value={char} 
+                          initialAnimation={initialLoad}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex justify-center space-x-1">
+                      {secondLine.split('').map((char, index) => (
+                        <SplitFlapChar 
+                          key={`opponent2-${index}`} 
+                          value={char} 
+                          initialAnimation={initialLoad}
+                        />
+                      ))}
+                    </div>
+                  </>
+                );
+              }
+            })()}
           </div>
         </div>
         
         {/* Competition and TV Channel Panel */}
         <div className="splitflap-display mt-6">
           <div className="flex flex-col space-y-4">
-            {/* Competition Name */}
-            <div className="flex justify-center space-x-1">
-              {match.competition.toUpperCase().split('').map((char, index) => (
-                <SplitFlapChar 
-                  key={`competition-${index}`} 
-                  value={char} 
-                  initialAnimation={initialLoad}
-                />
-              ))}
-            </div>
+            {/* Competition Name - Split into two lines */}
+            {match.competition === "Premier League" ? (
+              <>
+                <div className="flex justify-center space-x-1">
+                  {"PREMIER".split('').map((char, index) => (
+                    <SplitFlapChar 
+                      key={`competition1-${index}`} 
+                      value={char} 
+                      initialAnimation={initialLoad}
+                    />
+                  ))}
+                </div>
+                <div className="flex justify-center space-x-1">
+                  {"LEAGUE".split('').map((char, index) => (
+                    <SplitFlapChar 
+                      key={`competition2-${index}`} 
+                      value={char} 
+                      initialAnimation={initialLoad}
+                    />
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="flex justify-center space-x-1">
+                {match.competition.toUpperCase().split('').map((char, index) => (
+                  <SplitFlapChar 
+                    key={`competition-${index}`} 
+                    value={char} 
+                    initialAnimation={initialLoad}
+                  />
+                ))}
+              </div>
+            )}
             
             {/* TV Channel */}
             <div className="flex justify-center space-x-1">
