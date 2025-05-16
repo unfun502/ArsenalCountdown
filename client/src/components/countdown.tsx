@@ -322,18 +322,31 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
     const newSoundState = !soundOn;
     setSoundOn(newSoundState);
     
+    // Enable sound when turning on, or just log when turning off
     if (newSoundState) {
-      // Enable sound when user clicks the button
+      console.log("Sound enabled - initializing audio system");
       enableSound();
-      
-      // Trigger a full animation cycle to demonstrate the sound
-      setInitialLoad(true);
-      
-      // Stop the animation after 2 seconds
-      setTimeout(() => {
-        setInitialLoad(false);
-      }, 2000);
+    } else {
+      console.log("Sound disabled");
     }
+    
+    // Always trigger a full animation cycle to demonstrate the effect
+    console.log("Triggering animation demo");
+    setInitialLoad(true);
+    
+    // Reset all the time values to ensure a full refresh of the display
+    setFakeDigits({
+      days: Math.floor(Math.random() * 99),
+      hours: Math.floor(Math.random() * 24),
+      minutes: Math.floor(Math.random() * 60),
+      seconds: Math.floor(Math.random() * 60)
+    });
+    
+    // Stop the animation after 2 seconds
+    setTimeout(() => {
+      console.log("Animation demo complete");
+      setInitialLoad(false);
+    }, 2000);
   };
 
   return (

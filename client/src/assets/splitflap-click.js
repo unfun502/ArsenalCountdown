@@ -15,8 +15,22 @@ export const initSplitFlapSound = () => {
 
 // Enable sound globally - called after user interaction
 export const enableSound = () => {
+  console.log("Sound system enabled");
   soundEnabled = true;
+  
+  // Initialize sound system
   initSplitFlapSound();
+  
+  // Test play to confirm it works
+  if (flipAudio) {
+    console.log("Testing sound playback...");
+    // Create a clone to avoid issues with the original audio element
+    const testAudio = flipAudio.cloneNode();
+    testAudio.volume = 0.5;
+    testAudio.play()
+      .then(() => console.log("✓ Sound test successful"))
+      .catch(e => console.error("✗ Sound test failed:", e));
+  }
 };
 
 // Play the flip sound with proper handling for quick successive plays
