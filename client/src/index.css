@@ -4,6 +4,59 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes flipTop {
+  0% { transform: rotateX(0deg); }
+  100% { transform: rotateX(-90deg); }
+}
+
+@keyframes flipBottom {
+  0% { transform: rotateX(90deg); }
+  100% { transform: rotateX(0deg); }
+}
+
+.split-flap {
+  perspective: 400px;
+  position: relative;
+  height: 60px;
+  background: #1a1a1a;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.split-flap-top,
+.split-flap-bottom {
+  position: absolute;
+  width: 100%;
+  height: 50%;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #1a1a1a;
+}
+
+.split-flap-top {
+  transform-origin: bottom;
+  top: 0;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+}
+
+.split-flap-bottom {
+  transform-origin: top;
+  bottom: 0;
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+.flip {
+  animation: flipTop 0.6s ease-in;
+}
+
+.flop {
+  animation: flipBottom 0.6s ease-out;
+}
+
 @layer base {
   :root {
     --codepen-black: #131417;
