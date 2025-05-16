@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
 import { atcb_action } from "add-to-calendar-button";
 import { Button } from "@/components/ui/button";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Volume2, VolumeX } from "lucide-react";
 import { playSplitFlapSound, enableSound, isSoundEnabled } from "@/assets/splitflap-click";
 
 interface CountdownProps {
@@ -37,6 +37,11 @@ const SplitFlapDigit = ({
   useEffect(() => {
     // Only animate if the value has changed and should animate
     if (prevValueRef.current !== value && shouldAnimate) {
+      // Play sound if sound is enabled
+      if (isSoundEnabled()) {
+        playSplitFlapSound();
+      }
+      
       // Simple flip animation without cycling through numbers
       prevValueRef.current = value;
       setDisplayValue(value);
@@ -95,9 +100,19 @@ const SplitFlapChar = ({
     if (initialAnimation) {
       setIsFlipping(true);
       
+      // Play sound at the start of animation if enabled
+      if (isSoundEnabled()) {
+        playSplitFlapSound();
+      }
+      
       // Rapidly cycle through characters during initial animation
       spinIntervalRef.current = setInterval(() => {
         setDisplayChar(getRandomChar());
+        
+        // Occasionally play flip sound during rapid cycling (but not every frame to avoid audio overload)
+        if (isSoundEnabled() && Math.random() < 0.2) { // 20% chance to play sound on each cycle
+          playSplitFlapSound();
+        }
       }, 100); // Update every 100ms for a visible cycling effect
       
       // Stop the animation after 2 seconds (matching the main animation duration)
@@ -107,6 +122,11 @@ const SplitFlapChar = ({
         }
         setDisplayChar(value);
         setIsFlipping(false);
+        
+        // Play final click sound when settling on final value
+        if (isSoundEnabled()) {
+          playSplitFlapSound();
+        }
       }, 2000);
       
       return () => {
@@ -121,9 +141,15 @@ const SplitFlapChar = ({
   // Handle updates after initial animation
   useEffect(() => {
     if (!initialAnimation && !isFlipping) {
-      setDisplayChar(value);
+      // If the value has changed, play a sound and update display
+      if (displayChar !== value) {
+        if (isSoundEnabled()) {
+          playSplitFlapSound();
+        }
+        setDisplayChar(value);
+      }
     }
-  }, [value, initialAnimation, isFlipping]);
+  }, [value, initialAnimation, isFlipping, displayChar]);
   
   return (
     <div className="splitflap-cell">
@@ -192,6 +218,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
   const [prevTimeLeft, setPrevTimeLeft] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [initialLoad, setInitialLoad] = useState(true);
   const [fakeDigits, setFakeDigits] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+  const [soundOn, setSoundOn] = useState(false);
   const initialAnimationRef = useRef<NodeJS.Timeout | null>(null);
   
   // Initial animation that cycles through random numbers more slowly
@@ -288,6 +315,18 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
     
     return () => clearInterval(timer);
   }, []);
+  
+  // Handle toggling sound on/off
+  const toggleSound = () => {
+    if (!soundOn) {
+      // Enable sound when user clicks the button
+      enableSound();
+      // Play a sound immediately to confirm it's working
+      playSplitFlapSound();
+    }
+    // Toggle the UI state
+    setSoundOn(!soundOn);
+  };
 
   return (
     <Card className="bg-transparent border-0 shadow-none">
