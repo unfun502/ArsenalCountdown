@@ -21,20 +21,36 @@ export const enableSound = () => {
 
 // Play the flip sound with proper handling for quick successive plays
 export const playSplitFlapSound = () => {
-  if (!soundEnabled) return;
+  if (!soundEnabled) {
+    console.log("Sound is disabled, not playing");
+    return;
+  }
+  
+  console.log("Attempting to play split-flap sound");
   
   try {
     if (!flipAudio) {
+      console.log("No audio initialized, initializing now");
       initSplitFlapSound();
     }
     
     // Clone the audio for concurrent sounds (multiple digits flipping)
     const audioClone = flipAudio?.cloneNode();
     if (audioClone) {
-      audioClone.volume = 0.3;
-      audioClone.play().catch(e => {
-        console.log("Browser prevented autoplay:", e);
-      });
+      audioClone.volume = 0.5; // Increased volume for better audibility
+      console.log("Playing sound clone");
+      audioClone.play()
+        .then(() => console.log("Sound played successfully"))
+        .catch(e => {
+          console.error("Browser prevented autoplay:", e);
+          // Try to play the original audio as a fallback
+          if (flipAudio) {
+            console.log("Trying original audio element");
+            flipAudio.play().catch(e => console.error("Original audio also failed:", e));
+          }
+        });
+    } else {
+      console.error("Failed to clone audio node");
     }
   } catch (err) {
     console.error("Error playing sound:", err);

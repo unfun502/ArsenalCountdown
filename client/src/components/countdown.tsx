@@ -318,14 +318,22 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
   
   // Handle toggling sound on/off
   const toggleSound = () => {
-    if (!soundOn) {
+    // Toggle sound state
+    const newSoundState = !soundOn;
+    setSoundOn(newSoundState);
+    
+    if (newSoundState) {
       // Enable sound when user clicks the button
       enableSound();
-      // Play a sound immediately to confirm it's working
-      playSplitFlapSound();
+      
+      // Trigger a full animation cycle to demonstrate the sound
+      setInitialLoad(true);
+      
+      // Stop the animation after 2 seconds
+      setTimeout(() => {
+        setInitialLoad(false);
+      }, 2000);
     }
-    // Toggle the UI state
-    setSoundOn(!soundOn);
   };
 
   return (

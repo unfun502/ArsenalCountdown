@@ -4,6 +4,8 @@ import { storage } from "./storage";
 import axios from "axios";
 import { ZodError } from "zod";
 import { insertMatchSchema } from "@shared/schema";
+import path from "path";
+import express from "express";
 
 if (!process.env.FOOTBALL_DATA_API_KEY) {
   throw new Error("FOOTBALL_DATA_API_KEY is required");
@@ -12,6 +14,19 @@ if (!process.env.FOOTBALL_DATA_API_KEY) {
 const FOOTBALL_DATA_API_KEY = process.env.FOOTBALL_DATA_API_KEY;
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Serve sound files with the correct content type
+  app.get('/sounds/:filename', (req, res) => {
+    const filename = req.params.filename;
+    const filePath = path.join(process.cwd(), 'public', 'sounds', filename);
+    
+    // Set proper content type for audio files
+    if (filename.endsWith('.mp3')) {
+      res.setHeader('Content-Type', 'audio/mpeg');
+    }
+    
+    res.sendFile(filePath);
+  });
+
   app.get("/api/next-match", async (req, res) => {
     try {
       // Get cached match if available
