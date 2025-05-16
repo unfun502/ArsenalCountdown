@@ -5,7 +5,8 @@ import { format } from "date-fns";
 import { atcb_action } from "add-to-calendar-button";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon } from "lucide-react";
-// Remove direct import as we'll use the audio element from the DOM
+// Import our sound utilities
+import { playSplitFlapSound, stopSplitFlapSound } from "../assets/splitflap-click.js";
 
 interface CountdownProps {
   kickoff: Date;
@@ -167,26 +168,8 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
   // Initial animation that cycles through random numbers more slowly
   useEffect(() => {
     if (initialLoad) {
-      // Attempt to play the sound using a different approach
-      try {
-        const audioElement = document.getElementById('clickSound') as HTMLAudioElement;
-        if (audioElement) {
-          audioElement.volume = 0.7;
-          audioElement.currentTime = 0;
-          
-          // Create a user interaction event to bypass autoplay restrictions
-          const playPromise = audioElement.play();
-          
-          if (playPromise !== undefined) {
-            playPromise.catch(error => {
-              console.log("Could not play audio automatically:", error);
-              // We'll need manual interaction to play the sound
-            });
-          }
-        }
-      } catch (err) {
-        console.error("Audio error:", err);
-      }
+      // Play the split flap sound during initial animation
+      playSplitFlapSound();
       
       // Generate random digits during the initial animation
       const generateRandomDigits = () => {
@@ -210,10 +193,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
         setInitialLoad(false);
         
         // Stop the sound when animation ends
-        if (audioElement) {
-          audioElement.pause();
-          audioElement.currentTime = 0;
-        }
+        stopSplitFlapSound();
       }, 2000);
       
       return () => {
@@ -223,9 +203,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
         }
         
         // Stop the sound if component unmounts
-        if (audioElement) {
-          audioElement.pause();
-        }
+        stopSplitFlapSound();
       };
     }
   }, [initialLoad]);
