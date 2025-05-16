@@ -240,7 +240,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
         </div>
         
         <div className="splitflap-display mb-6">
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             {timeUnits.map((unit) => (
               <TimeUnit 
                 key={unit.label} 
@@ -257,12 +257,13 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
         <div className="splitflap-display mt-6">
           <div className="flex flex-col space-y-4">
             {/* Day of Week */}
-            <div className="flex justify-center space-x-1">
+            <div className="flex justify-center space-x-[2px] md:space-x-1">
               {dayOfWeek.split('').map((char, index) => (
                 <SplitFlapChar 
                   key={`day-${index}`} 
                   value={char} 
                   initialAnimation={initialLoad}
+                  small={true}
                 />
               ))}
             </div>
