@@ -240,16 +240,39 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
         </div>
         
         <div className="splitflap-display mb-6">
-          <div className="grid grid-cols-4 gap-4">
-            {timeUnits.map((unit) => (
-              <TimeUnit 
-                key={unit.label} 
-                label={unit.label} 
-                value={unit.value}
-                prevValue={unit.prevValue}
-                initialAnimation={initialLoad}
-              />
-            ))}
+          {/* Responsive grid - 2x2 on mobile, 4x1 on desktop */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* First row on mobile: Days and Hours */}
+            <TimeUnit 
+              key={timeUnits[0].label} 
+              label={timeUnits[0].label} 
+              value={timeUnits[0].value}
+              prevValue={timeUnits[0].prevValue}
+              initialAnimation={initialLoad}
+            />
+            <TimeUnit 
+              key={timeUnits[1].label} 
+              label={timeUnits[1].label} 
+              value={timeUnits[1].value}
+              prevValue={timeUnits[1].prevValue}
+              initialAnimation={initialLoad}
+            />
+            
+            {/* Second row on mobile: Minutes and Seconds */}
+            <TimeUnit 
+              key={timeUnits[2].label} 
+              label={timeUnits[2].label} 
+              value={timeUnits[2].value}
+              prevValue={timeUnits[2].prevValue}
+              initialAnimation={initialLoad}
+            />
+            <TimeUnit 
+              key={timeUnits[3].label} 
+              label={timeUnits[3].label} 
+              value={timeUnits[3].value}
+              prevValue={timeUnits[3].prevValue}
+              initialAnimation={initialLoad}
+            />
           </div>
         </div>
         
