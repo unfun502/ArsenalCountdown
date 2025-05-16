@@ -167,11 +167,25 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
   // Initial animation that cycles through random numbers more slowly
   useEffect(() => {
     if (initialLoad) {
-      // Play the flip sound during initial animation
-      const audioElement = document.getElementById('clickSound') as HTMLAudioElement;
-      if (audioElement) {
-        audioElement.currentTime = 20; // Start at the 20-second mark as requested
-        audioElement.play().catch(e => console.log("Audio play error:", e));
+      // Attempt to play the sound using a different approach
+      try {
+        const audioElement = document.getElementById('clickSound') as HTMLAudioElement;
+        if (audioElement) {
+          audioElement.volume = 0.7;
+          audioElement.currentTime = 0;
+          
+          // Create a user interaction event to bypass autoplay restrictions
+          const playPromise = audioElement.play();
+          
+          if (playPromise !== undefined) {
+            playPromise.catch(error => {
+              console.log("Could not play audio automatically:", error);
+              // We'll need manual interaction to play the sound
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Audio error:", err);
       }
       
       // Generate random digits during the initial animation
