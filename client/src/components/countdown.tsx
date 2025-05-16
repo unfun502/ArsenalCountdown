@@ -161,13 +161,16 @@ const TimeUnit = ({
   label, 
   value, 
   initialAnimation,
-  prevValue
+  prevValue,
+  playSound
 }: { 
   label: string, 
   value: number, 
   initialAnimation: boolean,
-  prevValue?: number 
+  prevValue?: number,
+  playSound?: () => void
 }) => {
+  const playClickSound = playSound || (() => {});
   const displayValue = value.toString().padStart(2, '0');
   const digit1 = displayValue[0];
   const digit2 = displayValue[1];
@@ -195,11 +198,13 @@ const TimeUnit = ({
           value={digit1} 
           initialAnimation={initialAnimation} 
           shouldAnimate={shouldAnimateDigit1}
+          playSound={playClickSound}
         />
         <SplitFlapDigit 
           value={digit2} 
           initialAnimation={initialAnimation} 
           shouldAnimate={shouldAnimateDigit2}
+          playSound={playClickSound}
         />
       </div>
       <div className="splitflap-unit-label">{label}</div>
@@ -514,6 +519,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
               value={timeUnits[0].value}
               prevValue={timeUnits[0].prevValue}
               initialAnimation={initialLoad}
+              playSound={playClickSound}
             />
             <TimeUnit 
               key={timeUnits[1].label} 
@@ -521,6 +527,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
               value={timeUnits[1].value}
               prevValue={timeUnits[1].prevValue}
               initialAnimation={initialLoad}
+              playSound={playClickSound}
             />
             
             {/* Second row on mobile: Minutes and Seconds */}
@@ -530,6 +537,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
               value={timeUnits[2].value}
               prevValue={timeUnits[2].prevValue}
               initialAnimation={initialLoad}
+              playSound={playClickSound}
             />
             <TimeUnit 
               key={timeUnits[3].label} 
@@ -537,6 +545,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
               value={timeUnits[3].value}
               prevValue={timeUnits[3].prevValue}
               initialAnimation={initialLoad}
+              playSound={playClickSound}
             />
           </div>
         </div>
@@ -661,12 +670,12 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
               {(() => {
                 // Create the time display components
                 const timeComponents = [
-                  <SplitFlapDigit key="hour1" value={hours[0]} initialAnimation={initialLoad} shouldAnimate={false} />,
-                  <SplitFlapDigit key="hour2" value={hours[1]} initialAnimation={initialLoad} shouldAnimate={false} />,
-                  <SplitFlapChar key="colon" value=":" initialAnimation={initialLoad} />,
-                  <SplitFlapDigit key="min1" value={minutes[0]} initialAnimation={initialLoad} shouldAnimate={false} />,
-                  <SplitFlapDigit key="min2" value={minutes[1]} initialAnimation={initialLoad} shouldAnimate={false} />,
-                  <SplitFlapChar key="space" value=" " initialAnimation={initialLoad} />
+                  <SplitFlapDigit key="hour1" value={hours[0]} initialAnimation={initialLoad} shouldAnimate={false} playSound={playClickSound} />,
+                  <SplitFlapDigit key="hour2" value={hours[1]} initialAnimation={initialLoad} shouldAnimate={false} playSound={playClickSound} />,
+                  <SplitFlapChar key="colon" value=":" initialAnimation={initialLoad} playSound={playClickSound} />,
+                  <SplitFlapDigit key="min1" value={minutes[0]} initialAnimation={initialLoad} shouldAnimate={false} playSound={playClickSound} />,
+                  <SplitFlapDigit key="min2" value={minutes[1]} initialAnimation={initialLoad} shouldAnimate={false} playSound={playClickSound} />,
+                  <SplitFlapChar key="space" value=" " initialAnimation={initialLoad} playSound={playClickSound} />
                 ];
                 
                 // Add AM/PM
@@ -675,6 +684,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                     key={`ampm-${index}`} 
                     value={char} 
                     initialAnimation={initialLoad}
+                    playSound={playClickSound}
                   />
                 ));
                 
