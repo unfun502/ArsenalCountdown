@@ -22,25 +22,23 @@ interface TimeLeft {
 const SplitFlapDigit = ({ 
   value, 
   initialAnimation = false,
-  shouldAnimate = false
+  shouldAnimate = false,
+  playSound = () => {} // Pass the sound function as a prop
 }: { 
   value: string, 
   initialAnimation?: boolean,
-  shouldAnimate?: boolean 
+  shouldAnimate?: boolean,
+  playSound?: () => void 
 }) => {
   const [displayValue, setDisplayValue] = useState(value);
   const prevValueRef = useRef(value);
-  
-  // Sound is no longer handled here
   
   // Handle normal flipping when digit changes (like seconds)
   useEffect(() => {
     // Only animate if the value has changed and should animate
     if (prevValueRef.current !== value && shouldAnimate) {
-      // Play sound if sound is enabled
-      if (isSoundEnabled()) {
-        playSplitFlapSound();
-      }
+      // Call the passed sound function
+      playSound();
       
       // Simple flip animation without cycling through numbers
       prevValueRef.current = value;
@@ -50,7 +48,7 @@ const SplitFlapDigit = ({
       prevValueRef.current = value;
       setDisplayValue(value);
     }
-  }, [value, shouldAnimate]);
+  }, [value, shouldAnimate, playSound]);
 
   return (
     <div className="splitflap-cell">
@@ -66,10 +64,12 @@ const SplitFlapDigit = ({
 // Split flap cell component for letters and other characters
 const SplitFlapChar = ({ 
   value, 
-  initialAnimation = false
+  initialAnimation = false,
+  playSound = () => {} // Pass the sound function as a prop
 }: { 
   value: string, 
-  initialAnimation?: boolean
+  initialAnimation?: boolean,
+  playSound?: () => void
 }) => {
   const [displayChar, setDisplayChar] = useState(value);
   const [isFlipping, setIsFlipping] = useState(initialAnimation);
@@ -100,18 +100,16 @@ const SplitFlapChar = ({
     if (initialAnimation) {
       setIsFlipping(true);
       
-      // Play sound at the start of animation if enabled
-      if (isSoundEnabled()) {
-        playSplitFlapSound();
-      }
+      // Play sound at the start of animation
+      playSound();
       
       // Rapidly cycle through characters during initial animation
       spinIntervalRef.current = setInterval(() => {
         setDisplayChar(getRandomChar());
         
         // Occasionally play flip sound during rapid cycling (but not every frame to avoid audio overload)
-        if (isSoundEnabled() && Math.random() < 0.2) { // 20% chance to play sound on each cycle
-          playSplitFlapSound();
+        if (Math.random() < 0.2) { // 20% chance to play sound on each cycle
+          playSound();
         }
       }, 100); // Update every 100ms for a visible cycling effect
       
@@ -124,9 +122,7 @@ const SplitFlapChar = ({
         setIsFlipping(false);
         
         // Play final click sound when settling on final value
-        if (isSoundEnabled()) {
-          playSplitFlapSound();
-        }
+        playSound();
       }, 2000);
       
       return () => {
@@ -136,20 +132,18 @@ const SplitFlapChar = ({
     } else {
       setDisplayChar(value);
     }
-  }, [initialAnimation, value]);
+  }, [initialAnimation, value, playSound]);
   
   // Handle updates after initial animation
   useEffect(() => {
     if (!initialAnimation && !isFlipping) {
       // If the value has changed, play a sound and update display
       if (displayChar !== value) {
-        if (isSoundEnabled()) {
-          playSplitFlapSound();
-        }
+        playSound();
         setDisplayChar(value);
       }
     }
-  }, [value, initialAnimation, isFlipping, displayChar]);
+  }, [value, initialAnimation, isFlipping, displayChar, playSound]);
   
   return (
     <div className="splitflap-cell">
@@ -316,25 +310,72 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
     return () => clearInterval(timer);
   }, []);
   
+  // Web Audio API context
+  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
+    
+  // Simple function to generate a click sound using Web Audio API
+  const generateClickSound = () => {
+    try {
+      if (!audioContext) {
+        // Create audio context on first use (requires user interaction)
+        const newContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        setAudioContext(newContext);
+        console.log("Created new Audio Context");
+        return newContext;
+      }
+      return audioContext;
+    } catch (e) {
+      console.error("Failed to create audio context:", e);
+      return null;
+    }
+  };
+  
+  // Play a click sound using Web Audio API
+  const playClickSound = () => {
+    if (!soundOn) return;
+    
+    try {
+      console.log("Attempting to play click sound with Web Audio API");
+      const ctx = audioContext || generateClickSound();
+      if (!ctx) return;
+      
+      // Create an oscillator for a quick click sound
+      const oscillator = ctx.createOscillator();
+      const gainNode = ctx.createGain();
+      
+      // Configure nodes
+      oscillator.type = 'triangle';
+      oscillator.frequency.setValueAtTime(800, ctx.currentTime);
+      oscillator.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.1);
+      
+      gainNode.gain.setValueAtTime(0.5, ctx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+      
+      // Connect nodes
+      oscillator.connect(gainNode);
+      gainNode.connect(ctx.destination);
+      
+      // Play sound
+      oscillator.start();
+      oscillator.stop(ctx.currentTime + 0.1);
+      console.log("Click sound generated");
+    } catch (e) {
+      console.error("Error playing click sound:", e);
+    }
+  };
+    
   // Handle toggling sound on/off
   const toggleSound = () => {
     // Toggle sound state
     const newSoundState = !soundOn;
     setSoundOn(newSoundState);
     
-    // Enable sound when turning on, or just log when turning off
+    // Initialize audio context (needs user interaction)
     if (newSoundState) {
-      console.log("Sound enabled - initializing audio system");
-      enableSound();
-      
-      // Direct audio test (browser requires user interaction)
-      try {
-        const testSound = new Audio("data:audio/mpeg;base64,//uQZAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAAFAAAGUACAgICAgICAgICAgMDAwMDAwMDAwMDAwODg4ODg4ODg4ODg4P///////////////////8AAAA5TEFNRTMuOTlyAc0AAAAAAAAAABSAJAJAQgAAgAAABlCSNzdGAAAAAAAAAAAAAAAAAAAAP/7kGQAAAAuIVjtMGAAodRJnbYMAAS5jFO3veAAk1mMl+94AB//NPa00t//qer///+jWtQ5OTTv9RrXC+Nbf/XdQgAAAAAATEFNRTMuOTkuNVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/7kmRAj/AAAGkAAAAIAAANIAAAAQAAAaQAAAAgAAA0gAAABFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV");
-        console.log("Playing embedded test sound");
-        testSound.play().catch(e => console.error("Could not play embedded test sound:", e));
-      } catch (e) {
-        console.error("Error with embedded test sound:", e);
-      }
+      console.log("Sound enabled - initializing Web Audio system");
+      generateClickSound();
+      // Try to play a sound immediately to confirm it works
+      setTimeout(() => playClickSound(), 100);
     } else {
       console.log("Sound disabled");
     }
@@ -501,6 +542,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                         key={`day-${index}`} 
                         value={char} 
                         initialAnimation={initialLoad}
+                        playSound={playClickSound}
                       />
                     ))}
                     
