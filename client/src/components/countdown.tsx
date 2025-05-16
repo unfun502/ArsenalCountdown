@@ -65,41 +65,71 @@ const SplitFlapChar = ({
   value: string, 
   initialAnimation?: boolean
 }) => {
-  const [prevValue, setPrevValue] = useState(value);
+  const [displayChar, setDisplayChar] = useState(value);
   const [isFlipping, setIsFlipping] = useState(initialAnimation);
-  const clickSound = useRef<HTMLAudioElement | null>(null);
+  const animationRef = useRef<NodeJS.Timeout | null>(null);
+  const spinIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Initialize sound on component mount
-  useEffect(() => {
-    clickSound.current = new Audio('/sounds/splitflap-click.mp3');
-    clickSound.current.volume = 0.3; // Lower volume for characters
-  }, []);
+  // Generate random character based on the type of input character
+  const getRandomChar = () => {
+    if (/[A-Z]/.test(value)) {
+      // Random uppercase letter
+      const charCode = Math.floor(Math.random() * 26) + 65;
+      return String.fromCharCode(charCode);
+    } else if (/[0-9]/.test(value)) {
+      // Random digit
+      return Math.floor(Math.random() * 10).toString();
+    } else if (value === ' ') {
+      // For spaces, return space
+      return ' ';
+    } else {
+      // For other special characters, return as is or pick from common ones
+      const specialChars = ['-', '.', ':', '/', value];
+      return specialChars[Math.floor(Math.random() * specialChars.length)];
+    }
+  };
   
+  // Handle initial animation with spinning characters
   useEffect(() => {
-    if (value !== prevValue) {
+    if (initialAnimation) {
       setIsFlipping(true);
       
-      const timer = setTimeout(() => {
-        setIsFlipping(false);
-        setPrevValue(value);
-      }, 300); // Animation duration
+      // Rapidly cycle through characters during initial animation
+      spinIntervalRef.current = setInterval(() => {
+        setDisplayChar(getRandomChar());
+      }, 100); // Update every 100ms for a visible cycling effect
       
-      return () => clearTimeout(timer);
-    }
-  }, [value, prevValue]);
-  
-  useEffect(() => {
-    if (!initialAnimation) {
-      setPrevValue(value);
+      // Stop the animation after 2 seconds (matching the main animation duration)
+      animationRef.current = setTimeout(() => {
+        if (spinIntervalRef.current) {
+          clearInterval(spinIntervalRef.current);
+        }
+        setDisplayChar(value);
+        setIsFlipping(false);
+      }, 2000);
+      
+      return () => {
+        if (spinIntervalRef.current) clearInterval(spinIntervalRef.current);
+        if (animationRef.current) clearTimeout(animationRef.current);
+      };
+    } else {
+      setDisplayChar(value);
     }
   }, [initialAnimation, value]);
+  
+  // Handle updates after initial animation
+  useEffect(() => {
+    if (!initialAnimation && !isFlipping) {
+      setDisplayChar(value);
+    }
+  }, [value, initialAnimation, isFlipping]);
   
   return (
     <div className="splitflap-cell">
       <div className="splitflap-dot left"></div>
       <div className="splitflap-dot right"></div>
       <div className={`splitflap-number ${initialAnimation ? 'splitflap-init-animate' : ''} ${isFlipping ? 'flip-enter-active' : ''}`}>
-        {value}
+        {displayChar}
       </div>
     </div>
   );
