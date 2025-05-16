@@ -6,15 +6,8 @@ let soundEnabled = false;
 export const initSplitFlapSound = (): void => {
   if (!flipAudio) {
     console.log("Initializing split-flap sound effect");
-    // Try the newer sound first, fallback to the older one if needed
-    flipAudio = new Audio('/sounds/splitflap-click.mp3');
-    
-    // If the new sound fails to load, try the fallback
-    flipAudio.addEventListener('error', () => {
-      console.log("Error loading splitflap-click.mp3, trying flipcard.mp3");
-      flipAudio = new Audio('/sounds/flipcard.mp3');
-    });
-    
+    // Use the originally provided sound (flipcard.mp3)
+    flipAudio = new Audio('/sounds/flipcard.mp3');
     flipAudio.volume = 0.3; // Lower volume to avoid it being too loud
     flipAudio.preload = 'auto'; // Preload for better performance
   }
