@@ -342,18 +342,39 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
     const newSoundState = !soundOn;
     setSoundOn(newSoundState);
     
-    // Enable or disable sound system
+    // Get direct reference to the audio element
+    const audioElement = document.getElementById('typewriterSound') as HTMLAudioElement;
+    
     if (newSoundState) {
       console.log("Sound enabled");
       enableSound();
       
-      // Play a demo sound after a short delay
-      setTimeout(() => {
-        playSound();
-      }, 100);
+      // Try to play the sound directly using the audio element
+      if (audioElement) {
+        audioElement.currentTime = 0; // Reset to beginning
+        audioElement.volume = 0.7;
+        
+        // Try to play and handle any errors
+        const playPromise = audioElement.play();
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              console.log("Sound played successfully");
+            })
+            .catch(error => {
+              console.error("Error playing sound:", error);
+            });
+        }
+      }
     } else {
       console.log("Sound disabled");
       disableSound();
+      
+      // Stop any playing sound
+      if (audioElement && !audioElement.paused) {
+        audioElement.pause();
+        audioElement.currentTime = 0;
+      }
     }
     
     // Always trigger a full animation cycle to demonstrate the effect
@@ -1078,6 +1099,14 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
           
           {/* Sound toggle button */}
           <div className="mt-4 text-center">
+            {/* Inline audio element that can be controlled directly */}
+            <audio 
+              id="typewriterSound" 
+              src="/sounds/typewriter.mp3" 
+              preload="auto"
+              style={{ display: 'none' }}
+            />
+            
             <Button
               variant="outline"
               size="sm"
@@ -1088,6 +1117,12 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
               {soundOn ? <Volume2 className="h-4 w-4 mr-2" /> : <VolumeX className="h-4 w-4 mr-2" />}
               {soundOn ? "Sound On" : "Sound Off"}
             </Button>
+            
+            {!soundOn && (
+              <div className="mt-2 text-xs text-gray-400">
+                Click to enable sound effects
+              </div>
+            )}
           </div>
         </div>
       </CardContent>
