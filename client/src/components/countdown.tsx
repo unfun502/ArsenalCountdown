@@ -6,12 +6,12 @@ import { atcb_action } from "add-to-calendar-button";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon, Volume2, VolumeX } from "lucide-react";
 import { 
-  initAudioPlayer, 
   enableSound, 
   disableSound, 
-  playTypewriterSound, 
-  isSoundEnabled 
-} from "@/assets/audio-player";
+  playSound, 
+  isSoundEnabled,
+  initSoundState
+} from "@/assets/audio";
 
 interface CountdownProps {
   kickoff: Date;
@@ -321,42 +321,19 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
     return () => clearInterval(timer);
   }, []);
   
-  // Initialize audio player system
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  
-  // Initialize audio system on component mount
+  // Initialize sound state on component mount
   useEffect(() => {
-    // Initialize the audio system once
-    initAudioPlayer();
-    
-    // Create a ref for the audio instance
-    audioRef.current = new Audio('/sounds/type.mp3');
-    
-    // Set the initial sound state from saved preference
-    const savedSoundState = localStorage.getItem('arsenal-countdown-sound');
-    if (savedSoundState === 'on') {
+    // Check for saved preference
+    const hasSavedPreference = initSoundState();
+    if (hasSavedPreference) {
       setSoundOn(true);
-      enableSound();
-      console.log("Sound enabled from saved preference");
     }
-    
-    // Cleanup audio resources on component unmount
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
-    };
   }, []);
 
-  // Function to play the typewriter sound
+  // Simple sound playback function
   const playClickSound = () => {
     if (!soundOn) return;
-    
-    playTypewriterSound()
-      .catch(err => {
-        console.error('Error playing sound:', err);
-      });
+    playSound();
   };
     
   // Handle toggling sound on/off
@@ -367,32 +344,12 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
     
     // Enable or disable sound system
     if (newSoundState) {
-      console.log("Sound enabled - initializing typewriter sound system");
+      console.log("Sound enabled");
       enableSound();
       
-      // Play a demo sound to confirm it works - this must be done with a delay
-      // to ensure it happens after the click event is fully processed
+      // Play a demo sound after a short delay
       setTimeout(() => {
-        // Try to play the sound
-        if (audioRef.current) {
-          audioRef.current.currentTime = 0; // Start from beginning
-          audioRef.current.volume = 0.7;
-          
-          audioRef.current.play()
-            .then(() => console.log("Demo sound played successfully"))
-            .catch(e => {
-              console.error("Demo sound play failed:", e);
-              
-              // Fallback to our playTypewriterSound function
-              playTypewriterSound()
-                .then(() => console.log("Fallback sound played successfully"))
-                .catch(err => console.error("Fallback sound also failed:", err));
-            });
-        } else {
-          // If audioRef is not available, use the direct function
-          playTypewriterSound()
-            .catch(err => console.error("Sound play failed:", err));
-        }
+        playSound();
       }, 100);
     } else {
       console.log("Sound disabled");
