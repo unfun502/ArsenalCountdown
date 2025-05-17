@@ -6,13 +6,12 @@ import { atcb_action } from "add-to-calendar-button";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon, Volume2, VolumeX } from "lucide-react";
 import { 
-  initTypewriterSounds, 
+  initAudioPlayer, 
   enableSound, 
   disableSound, 
-  playTypewriterClickSound, 
-  playTypewriterKeySound, 
+  playTypewriterSound, 
   isSoundEnabled 
-} from "@/assets/typewriter-sounds";
+} from "@/assets/audio-player";
 
 interface CountdownProps {
   kickoff: Date;
@@ -322,13 +321,18 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
     return () => clearInterval(timer);
   }, []);
   
-  // Web Audio API context
-  // Initialize sounds system - load audio files and prepare for playback
+  // Initialize audio player system
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Initialize audio system on component mount
   useEffect(() => {
-    // Initialize sound system on component mount
-    initTypewriterSounds();
+    // Initialize the audio system once
+    initAudioPlayer();
     
-    // Initialize sound state from remembered user preference
+    // Create a ref for the audio instance
+    audioRef.current = new Audio('/sounds/type.mp3');
+    
+    // Set the initial sound state from saved preference
     const savedSoundState = localStorage.getItem('arsenal-countdown-sound');
     if (savedSoundState === 'on') {
       setSoundOn(true);
@@ -336,41 +340,22 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
       console.log("Sound enabled from saved preference");
     }
     
-    // Debug audio file availability
-    fetch('/sounds/typewriter-click.wav')
-      .then(res => {
-        console.log('Click WAV fetch result:', res.status, res.statusText);
-      })
-      .catch(e => console.error('Click WAV fetch error:', e));
-      
-    fetch('/sounds/typewriter-click.mp3')
-      .then(res => {
-        console.log('Click MP3 fetch result:', res.status, res.statusText);
-      })
-      .catch(e => console.error('Click MP3 fetch error:', e));
+    // Cleanup audio resources on component unmount
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+    };
   }, []);
 
-  // Function to play the main typewriter click sound
+  // Function to play the typewriter sound
   const playClickSound = () => {
     if (!soundOn) return;
     
-    // Define direct audio play function for higher reliability
-    new Audio('/sounds/type.mp3').play()
+    playTypewriterSound()
       .catch(err => {
-        console.error('Direct audio play failed, trying fallback:', err);
-        playTypewriterClickSound();
-      });
-  };
-  
-  // Function to play the lighter key sound
-  const playKeySound = () => {
-    if (!soundOn) return;
-    
-    // Define direct audio play function for higher reliability
-    new Audio('/sounds/type.mp3').play()
-      .catch(err => {
-        console.error('Direct audio play failed, trying fallback:', err);
-        playTypewriterKeySound();
+        console.error('Error playing sound:', err);
       });
   };
     
@@ -384,31 +369,34 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
     if (newSoundState) {
       console.log("Sound enabled - initializing typewriter sound system");
       enableSound();
-      localStorage.setItem('arsenal-countdown-sound', 'on');
       
       // Play a demo sound to confirm it works - this must be done with a delay
       // to ensure it happens after the click event is fully processed
       setTimeout(() => {
-        // Try to play a sound directly
-        try {
-          const demoSound = new Audio('/sounds/type.mp3');
-          demoSound.volume = 0.5;
-          const playPromise = demoSound.play();
-          console.log("Demo sound play attempted");
+        // Try to play the sound
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0; // Start from beginning
+          audioRef.current.volume = 0.7;
           
-          if (playPromise !== undefined) {
-            playPromise
-              .then(() => console.log("Demo sound played successfully"))
-              .catch(e => console.error("Demo sound play failed:", e));
-          }
-        } catch (e) {
-          console.error("Error playing demo sound:", e);
+          audioRef.current.play()
+            .then(() => console.log("Demo sound played successfully"))
+            .catch(e => {
+              console.error("Demo sound play failed:", e);
+              
+              // Fallback to our playTypewriterSound function
+              playTypewriterSound()
+                .then(() => console.log("Fallback sound played successfully"))
+                .catch(err => console.error("Fallback sound also failed:", err));
+            });
+        } else {
+          // If audioRef is not available, use the direct function
+          playTypewriterSound()
+            .catch(err => console.error("Sound play failed:", err));
         }
       }, 100);
     } else {
       console.log("Sound disabled");
       disableSound();
-      localStorage.setItem('arsenal-countdown-sound', 'off');
     }
     
     // Always trigger a full animation cycle to demonstrate the effect
