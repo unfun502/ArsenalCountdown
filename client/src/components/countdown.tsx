@@ -4,14 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
 import { atcb_action } from "add-to-calendar-button";
 import { Button } from "@/components/ui/button";
-import { CalendarIcon, Volume2, VolumeX } from "lucide-react";
-import { 
-  enableSound, 
-  disableSound, 
-  playSound, 
-  isSoundEnabled,
-  initSoundState
-} from "@/assets/audio";
+import { CalendarIcon } from "lucide-react";
+import { TypewriterSound } from "@/components/TypewriterSound";
 
 interface CountdownProps {
   kickoff: Date;
@@ -321,65 +315,22 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
     return () => clearInterval(timer);
   }, []);
   
-  // Initialize sound state on component mount
+  // Keep the original soundOn state but just use as a dummy variable
+  const [soundOn, setSoundOn] = useState(false);
+  
   useEffect(() => {
-    // Check for saved preference
-    const hasSavedPreference = initSoundState();
-    if (hasSavedPreference) {
+    // Check localStorage for saved sound preference
+    const savedState = localStorage.getItem('arsenal-countdown-sound');
+    if (savedState === 'on') {
       setSoundOn(true);
     }
   }, []);
-
-  // Simple sound playback function
+  
+  // Placeholder for sound playback - actual sound is managed by SoundButton
   const playClickSound = () => {
-    if (!soundOn) return;
-    playSound();
+    // This is an empty function that does nothing
+    // Sound is handled by the SoundButton component
   };
-    
-  // Handle toggling sound on/off
-  const toggleSound = () => {
-    // Toggle sound state
-    const newSoundState = !soundOn;
-    setSoundOn(newSoundState);
-    
-    // Get direct reference to the audio element
-    const audioElement = document.getElementById('typewriterSound') as HTMLAudioElement;
-    
-    if (newSoundState) {
-      console.log("Sound enabled");
-      enableSound();
-      
-      // Try to play the sound directly using the audio element
-      if (audioElement) {
-        audioElement.currentTime = 0; // Reset to beginning
-        audioElement.volume = 0.7;
-        
-        // Try to play and handle any errors
-        const playPromise = audioElement.play();
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              console.log("Sound played successfully");
-            })
-            .catch(error => {
-              console.error("Error playing sound:", error);
-            });
-        }
-      }
-    } else {
-      console.log("Sound disabled");
-      disableSound();
-      
-      // Stop any playing sound
-      if (audioElement && !audioElement.paused) {
-        audioElement.pause();
-        audioElement.currentTime = 0;
-      }
-    }
-    
-    // Always trigger a full animation cycle to demonstrate the effect
-    console.log("Triggering animation demo");
-    setInitialLoad(true);
     
     // Reset all the time values to ensure a full refresh of the display
     setFakeDigits({
@@ -1098,31 +1049,9 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
           </div>
           
           {/* Sound toggle button */}
-          <div className="mt-4 text-center">
-            {/* Inline audio element that can be controlled directly */}
-            <audio 
-              id="typewriterSound" 
-              src="/sounds/typewriter.mp3" 
-              preload="auto"
-              style={{ display: 'none' }}
-            />
-            
-            <Button
-              variant="outline"
-              size="sm"
-              className={`rounded-full ${soundOn ? 'bg-green-900/50 border-green-500' : 'bg-black border-white/20'} text-white hover:bg-gray-900`}
-              onClick={toggleSound}
-              title={soundOn ? "Mute sound effects" : "Enable sound effects"}
-            >
-              {soundOn ? <Volume2 className="h-4 w-4 mr-2" /> : <VolumeX className="h-4 w-4 mr-2" />}
-              {soundOn ? "Sound On" : "Sound Off"}
-            </Button>
-            
-            {!soundOn && (
-              <div className="mt-2 text-xs text-gray-400">
-                Click to enable sound effects
-              </div>
-            )}
+          <div className="mt-4">
+            {/* Use standalone sound button component */}
+            <SoundButton />
           </div>
         </div>
       </CardContent>
