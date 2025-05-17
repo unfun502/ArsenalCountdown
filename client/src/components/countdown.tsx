@@ -37,30 +37,91 @@ const SplitFlapDigit = ({
   playSound?: () => void 
 }) => {
   const [displayValue, setDisplayValue] = useState(value);
-  const prevValueRef = useRef(value);
+  const [isFlipping, setIsFlipping] = useState(initialAnimation);
+  const animationRef = useRef<NodeJS.Timeout | null>(null);
+  const spinIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Handle normal flipping when digit changes (like seconds)
+  // Generate random digit
+  const getRandomDigit = () => {
+    return Math.floor(Math.random() * 10).toString();
+  };
+  
+  // Handle initial animation with spinning digits
   useEffect(() => {
-    // Only animate if the value has changed and should animate
-    if (prevValueRef.current !== value && shouldAnimate) {
-      // Call the passed sound function
+    if (initialAnimation) {
+      setIsFlipping(true);
+      
+      // Play sound at the start of animation
       playSound();
       
-      // Simple flip animation without cycling through numbers
-      prevValueRef.current = value;
-      setDisplayValue(value);
-    } else if (prevValueRef.current !== value) {
-      // Update the display without animation for digits that shouldn't animate
-      prevValueRef.current = value;
+      // Rapidly cycle through digits during initial animation
+      spinIntervalRef.current = setInterval(() => {
+        setDisplayValue(getRandomDigit());
+        
+        // Occasionally play flip sound during rapid cycling
+        if (Math.random() < 0.2) {
+          playSound();
+        }
+      }, 100); // Update every 100ms for a visible cycling effect
+      
+      // Stop the animation after 2 seconds
+      animationRef.current = setTimeout(() => {
+        if (spinIntervalRef.current) {
+          clearInterval(spinIntervalRef.current);
+        }
+        setDisplayValue(value);
+        setIsFlipping(false);
+        
+        // Play final click sound when settling on final value
+        playSound();
+      }, 2000);
+      
+      return () => {
+        if (spinIntervalRef.current) clearInterval(spinIntervalRef.current);
+        if (animationRef.current) clearTimeout(animationRef.current);
+      };
+    } else {
       setDisplayValue(value);
     }
-  }, [value, shouldAnimate, playSound]);
+  }, [initialAnimation, value, playSound]);
+  
+  // Handle value changes after initial animation
+  useEffect(() => {
+    if (!initialAnimation && !isFlipping && shouldAnimate) {
+      if (displayValue !== value) {
+        setIsFlipping(true);
+        playSound();
+        
+        // Rapidly cycle through a few random digits
+        let cycleCount = 0;
+        const maxCycles = 5; // Number of digits to cycle through
+        
+        const cycleInterval = setInterval(() => {
+          setDisplayValue(getRandomDigit());
+          cycleCount++;
+          
+          if (cycleCount >= maxCycles) {
+            clearInterval(cycleInterval);
+            setDisplayValue(value);
+            setIsFlipping(false);
+          }
+        }, 50); // Faster cycling for a quick animation
+        
+        return () => clearInterval(cycleInterval);
+      }
+    } else if (!initialAnimation && !isFlipping) {
+      // Just update the value without animation
+      if (displayValue !== value) {
+        setDisplayValue(value);
+      }
+    }
+  }, [value, initialAnimation, isFlipping, shouldAnimate, displayValue, playSound]);
 
   return (
     <div className="splitflap-cell">
       <div className="splitflap-dot left"></div>
       <div className="splitflap-dot right"></div>
-      <div className={`splitflap-number ${initialAnimation ? 'splitflap-init-animate' : ''} ${shouldAnimate && prevValueRef.current !== value ? 'flip-enter-active' : ''}`}>
+      <div className={`splitflap-number ${initialAnimation ? 'splitflap-init-animate' : ''} ${isFlipping ? 'flip-enter-active' : ''}`}>
         {displayValue}
       </div>
     </div>
