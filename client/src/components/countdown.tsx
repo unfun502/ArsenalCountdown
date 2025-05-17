@@ -1,11 +1,10 @@
-
 import { useEffect, useState, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
 import { atcb_action } from "add-to-calendar-button";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon } from "lucide-react";
-import { TypewriterSound } from "@/components/TypewriterSound";
+import { SoundButton } from "@/components/SoundButton";
 
 interface CountdownProps {
   kickoff: Date;
@@ -22,13 +21,11 @@ interface TimeLeft {
 const SplitFlapDigit = ({ 
   value, 
   initialAnimation = false,
-  shouldAnimate = false,
-  playSound = () => {} // Pass the sound function as a prop
+  shouldAnimate = false
 }: { 
   value: string, 
   initialAnimation?: boolean,
-  shouldAnimate?: boolean,
-  playSound?: () => void 
+  shouldAnimate?: boolean
 }) => {
   const [displayValue, setDisplayValue] = useState(value);
   const prevValueRef = useRef(value);
@@ -37,9 +34,6 @@ const SplitFlapDigit = ({
   useEffect(() => {
     // Only animate if the value has changed and should animate
     if (prevValueRef.current !== value && shouldAnimate) {
-      // Call the passed sound function
-      playSound();
-      
       // Simple flip animation without cycling through numbers
       prevValueRef.current = value;
       setDisplayValue(value);
@@ -48,7 +42,7 @@ const SplitFlapDigit = ({
       prevValueRef.current = value;
       setDisplayValue(value);
     }
-  }, [value, shouldAnimate, playSound]);
+  }, [value, shouldAnimate]);
 
   return (
     <div className="splitflap-cell">
@@ -64,12 +58,10 @@ const SplitFlapDigit = ({
 // Split flap cell component for letters and other characters
 const SplitFlapChar = ({ 
   value, 
-  initialAnimation = false,
-  playSound = () => {} // Pass the sound function as a prop
+  initialAnimation = false
 }: { 
   value: string, 
-  initialAnimation?: boolean,
-  playSound?: () => void
+  initialAnimation?: boolean
 }) => {
   const [displayChar, setDisplayChar] = useState(value);
   const [isFlipping, setIsFlipping] = useState(initialAnimation);
@@ -100,17 +92,9 @@ const SplitFlapChar = ({
     if (initialAnimation) {
       setIsFlipping(true);
       
-      // Play sound at the start of animation
-      playSound();
-      
       // Rapidly cycle through characters during initial animation
       spinIntervalRef.current = setInterval(() => {
         setDisplayChar(getRandomChar());
-        
-        // Occasionally play flip sound during rapid cycling (but not every frame to avoid audio overload)
-        if (Math.random() < 0.2) { // 20% chance to play sound on each cycle
-          playSound();
-        }
       }, 100); // Update every 100ms for a visible cycling effect
       
       // Stop the animation after 2 seconds (matching the main animation duration)
@@ -120,9 +104,6 @@ const SplitFlapChar = ({
         }
         setDisplayChar(value);
         setIsFlipping(false);
-        
-        // Play final click sound when settling on final value
-        playSound();
       }, 2000);
       
       return () => {
@@ -132,18 +113,17 @@ const SplitFlapChar = ({
     } else {
       setDisplayChar(value);
     }
-  }, [initialAnimation, value, playSound]);
+  }, [initialAnimation, value]);
   
   // Handle updates after initial animation
   useEffect(() => {
     if (!initialAnimation && !isFlipping) {
-      // If the value has changed, play a sound and update display
+      // If the value has changed, update display
       if (displayChar !== value) {
-        playSound();
         setDisplayChar(value);
       }
     }
-  }, [value, initialAnimation, isFlipping, displayChar, playSound]);
+  }, [value, initialAnimation, isFlipping, displayChar]);
   
   return (
     <div className="splitflap-cell">
@@ -161,16 +141,13 @@ const TimeUnit = ({
   label, 
   value, 
   initialAnimation,
-  prevValue,
-  playSound
+  prevValue
 }: { 
   label: string, 
   value: number, 
   initialAnimation: boolean,
-  prevValue?: number,
-  playSound?: () => void
+  prevValue?: number
 }) => {
-  const playClickSound = playSound || (() => {});
   const displayValue = value.toString().padStart(2, '0');
   const digit1 = displayValue[0];
   const digit2 = displayValue[1];
@@ -198,13 +175,11 @@ const TimeUnit = ({
           value={digit1} 
           initialAnimation={initialAnimation} 
           shouldAnimate={shouldAnimateDigit1}
-          playSound={playClickSound}
         />
         <SplitFlapDigit 
           value={digit2} 
           initialAnimation={initialAnimation} 
           shouldAnimate={shouldAnimateDigit2}
-          playSound={playClickSound}
         />
       </div>
       <div className="splitflap-unit-label">{label}</div>
@@ -217,14 +192,11 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
   const [prevTimeLeft, setPrevTimeLeft] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [initialLoad, setInitialLoad] = useState(true);
   const [fakeDigits, setFakeDigits] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-  const [soundOn, setSoundOn] = useState(false);
   const initialAnimationRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Initial animation that cycles through random numbers more slowly
+  // Initial animation that cycles through random numbers
   useEffect(() => {
     if (initialLoad) {
-      // Initial animation plays here
-      
       // Generate random digits during the initial animation
       const generateRandomDigits = () => {
         setFakeDigits({
@@ -238,15 +210,13 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
       // Start with random digits
       generateRandomDigits();
       
-      // Update random digits more slowly (250ms) for a visible spinning effect
+      // Update random digits for a visible spinning effect
       const interval = setInterval(generateRandomDigits, 250);
       
       // End the initial animation after 2 seconds
       initialAnimationRef.current = setTimeout(() => {
         clearInterval(interval);
         setInitialLoad(false);
-        
-        // Animation ends here
       }, 2000);
       
       return () => {
@@ -254,8 +224,6 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
         if (initialAnimationRef.current) {
           clearTimeout(initialAnimationRef.current);
         }
-        
-        // Cleanup if component unmounts
       };
     }
   }, [initialLoad]);
@@ -283,7 +251,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
     const timer = setInterval(calculateTimeLeft, 1000);
 
     return () => clearInterval(timer);
-  }, [kickoff]);
+  }, [kickoff, timeLeft]);
 
   // Choose between actual countdown and random values for initial animation
   const displayValues = initialLoad ? fakeDigits : timeLeft;
@@ -304,47 +272,45 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
   // Format match time for split flap display
   const [hours, minutesWithAMPM] = matchTime.split(':');
   const [minutes, ampm] = minutesWithAMPM.split(' ');
-  
-  // Update every second
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTick(prev => prev + 1);
-    }, 1000);
+
+  // Handle add to calendar button
+  const handleAddToCalendar = () => {
+    const opponent = match?.opponent || "TBD";
+    const competition = match?.competition || "Premier League";
     
-    return () => clearInterval(timer);
-  }, []);
-  
-  // Keep the original soundOn state but just use as a dummy variable
-  const [soundOn, setSoundOn] = useState(false);
-  
-  useEffect(() => {
-    // Check localStorage for saved sound preference
-    const savedState = localStorage.getItem('arsenal-countdown-sound');
-    if (savedState === 'on') {
-      setSoundOn(true);
-    }
-  }, []);
-  
-  // Placeholder for sound playback - actual sound is managed by SoundButton
-  const playClickSound = () => {
-    // This is an empty function that does nothing
-    // Sound is handled by the SoundButton component
-  };
-    
-    // Reset all the time values to ensure a full refresh of the display
-    setFakeDigits({
-      days: Math.floor(Math.random() * 99),
-      hours: Math.floor(Math.random() * 24),
-      minutes: Math.floor(Math.random() * 60),
-      seconds: Math.floor(Math.random() * 60)
+    atcb_action({
+      name: `Arsenal vs ${opponent}`,
+      description: `Arsenal FC match: ${competition}`,
+      startDate: format(matchDate, 'yyyy-MM-dd'),
+      startTime: format(matchDate, 'HH:mm'),
+      endTime: format(new Date(matchDate.getTime() + 2 * 60 * 60 * 1000), 'HH:mm'), // Add 2 hours for match duration
+      location: match?.venue || "Emirates Stadium, London",
+      options: ['Apple', 'Google', 'iCal', 'Outlook.com'],
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      trigger: 'click',
+      iCalFileName: "arsenal-match",
     });
+  };
+
+  // Helper function to chunk text into lines with max length
+  const chunkText = (text: string, maxLength: number = 12): string[] => {
+    if (!text) return [""];
     
-    // Stop the animation after 2 seconds
-    setTimeout(() => {
-      console.log("Animation demo complete");
-      setInitialLoad(false);
-    }, 2000);
+    // If text is shorter than maxLength, return as is
+    if (text.length <= maxLength) return [text];
+    
+    // Find space to break at
+    const breakAt = text.substring(0, maxLength).lastIndexOf(' ');
+    
+    // If no space found, force break at maxLength
+    const splitIndex = breakAt > 0 ? breakAt : maxLength;
+    
+    // Split text
+    const firstPart = text.substring(0, splitIndex);
+    const restPart = text.substring(splitIndex + 1); // Skip the space if breaking at space
+    
+    // Recursively chunk the rest
+    return [firstPart, ...chunkText(restPart, maxLength)];
   };
 
   return (
@@ -393,7 +359,6 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                         key={`title-${index}`} 
                         value={char} 
                         initialAnimation={initialLoad}
-                        playSound={playClickSound}
                       />
                     ))}
                     
@@ -421,7 +386,6 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
               value={timeUnits[0].value}
               prevValue={timeUnits[0].prevValue}
               initialAnimation={initialLoad}
-              playSound={playClickSound}
             />
             <TimeUnit 
               key={timeUnits[1].label} 
@@ -429,7 +393,6 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
               value={timeUnits[1].value}
               prevValue={timeUnits[1].prevValue}
               initialAnimation={initialLoad}
-              playSound={playClickSound}
             />
             
             {/* Second row on mobile: Minutes and Seconds */}
@@ -439,7 +402,6 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
               value={timeUnits[2].value}
               prevValue={timeUnits[2].prevValue}
               initialAnimation={initialLoad}
-              playSound={playClickSound}
             />
             <TimeUnit 
               key={timeUnits[3].label} 
@@ -447,7 +409,6 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
               value={timeUnits[3].value}
               prevValue={timeUnits[3].prevValue}
               initialAnimation={initialLoad}
-              playSound={playClickSound}
             />
           </div>
         </div>
@@ -455,18 +416,17 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
         {/* Match Date Panel */}
         <div className="splitflap-display mt-6">
           <div className="flex flex-col space-y-4">
-            {/* Day of Week */}
             {/* Day of Week - Fixed Width Panel for Desktop */}
             <div className="flex justify-center space-x-1 md:fixed-width-panel">
               {(() => {
-                // For mobile, just render the characters normally
+                // Handle different screen sizes
                 if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                  return dayOfWeek.split('').map((char: string, index: number) => (
+                  // For mobile, just render the characters normally
+                  return dayOfWeek.split('').map((char, index) => (
                     <SplitFlapChar 
                       key={`day-${index}`} 
                       value={char} 
                       initialAnimation={initialLoad}
-                      playSound={playClickSound}
                     />
                   ));
                 }
@@ -478,31 +438,30 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                 
                 // For left alignment, no left padding needed
                 const leftPadding = 0;
-                const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
+                const rightPadding = emptyFlapsNeeded;
                 
                 return (
                   <>
                     {/* Left empty flaps */}
                     {Array(leftPadding).fill(0).map((_, i) => (
-                      <div key={`left-empty-${i}`} className="empty-flap">
+                      <div key={`day-left-empty-${i}`} className="empty-flap">
                         <div className="splitflap-dot left"></div>
                         <div className="splitflap-dot right"></div>
                       </div>
                     ))}
                     
                     {/* Actual characters */}
-                    {chars.map((char: string, index: number) => (
+                    {chars.map((char, index) => (
                       <SplitFlapChar 
                         key={`day-${index}`} 
                         value={char} 
                         initialAnimation={initialLoad}
-                        playSound={playClickSound}
                       />
                     ))}
                     
                     {/* Right empty flaps */}
                     {Array(rightPadding).fill(0).map((_, i) => (
-                      <div key={`right-empty-${i}`} className="empty-flap">
+                      <div key={`day-right-empty-${i}`} className="empty-flap">
                         <div className="splitflap-dot left"></div>
                         <div className="splitflap-dot right"></div>
                       </div>
@@ -512,97 +471,30 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
               })()}
             </div>
             
-            {/* Date (without year) - Fixed Width Panel for Desktop */}
+            {/* Date and Time Split Flap Panel */}
             <div className="flex justify-center space-x-1 md:fixed-width-panel">
               {(() => {
+                const timeDisplay = `${matchDateFormatted} ${matchTime}`;
+                
                 // For mobile, just render the characters normally
                 if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                  return matchDateFormatted.split('').map((char: string, index: number) => (
+                  return timeDisplay.split('').map((char, index) => (
                     <SplitFlapChar 
-                      key={`date-${index}`} 
+                      key={`time-${index}`} 
                       value={char} 
                       initialAnimation={initialLoad}
                     />
                   ));
                 }
                 
-                // For desktop, ensure exactly 10 cells with centered text
-                const chars = matchDateFormatted.split('');
+                // For desktop, ensure exactly 10 cells with left-aligned text
+                const chars = timeDisplay.split('');
                 const totalChars = chars.length;
-                const emptyFlapsNeeded = 10 - totalChars;
+                const emptyFlapsNeeded = Math.max(0, 10 - totalChars);
                 
-                // Calculate left and right padding
+                // For left alignment, no left padding needed
                 const leftPadding = 0;
-                const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
-                
-                return (
-                  <>
-                    {/* Left empty flaps */}
-                    {Array(leftPadding).fill(0).map((_, i) => (
-                      <div key={`date-left-empty-${i}`} className="empty-flap">
-                        <div className="splitflap-dot left"></div>
-                        <div className="splitflap-dot right"></div>
-                      </div>
-                    ))}
-                    
-                    {/* Actual characters */}
-                    {chars.map((char: string, index: number) => (
-                      <SplitFlapChar 
-                        key={`date-${index}`} 
-                        value={char} 
-                        initialAnimation={initialLoad}
-                        playSound={playClickSound}
-                      />
-                    ))}
-                    
-                    {/* Right empty flaps */}
-                    {Array(rightPadding).fill(0).map((_, i) => (
-                      <div key={`date-right-empty-${i}`} className="empty-flap">
-                        <div className="splitflap-dot left"></div>
-                        <div className="splitflap-dot right"></div>
-                      </div>
-                    ))}
-                  </>
-                );
-              })()}
-            </div>
-            
-            {/* Match Time - Fixed Width Panel for Desktop */}
-            <div className="flex justify-center space-x-1 md:fixed-width-panel">
-              {(() => {
-                // Create the time display components
-                const timeComponents = [
-                  <SplitFlapDigit key="hour1" value={hours[0]} initialAnimation={initialLoad} shouldAnimate={false} playSound={playClickSound} />,
-                  <SplitFlapDigit key="hour2" value={hours[1]} initialAnimation={initialLoad} shouldAnimate={false} playSound={playClickSound} />,
-                  <SplitFlapChar key="colon" value=":" initialAnimation={initialLoad} playSound={playClickSound} />,
-                  <SplitFlapDigit key="min1" value={minutes[0]} initialAnimation={initialLoad} shouldAnimate={false} playSound={playClickSound} />,
-                  <SplitFlapDigit key="min2" value={minutes[1]} initialAnimation={initialLoad} shouldAnimate={false} playSound={playClickSound} />,
-                  <SplitFlapChar key="space" value=" " initialAnimation={initialLoad} playSound={playClickSound} />
-                ];
-                
-                // Add AM/PM
-                const ampmChars = ampm.split('').map((char: string, index: number) => (
-                  <SplitFlapChar 
-                    key={`ampm-${index}`} 
-                    value={char} 
-                    initialAnimation={initialLoad}
-                    playSound={playClickSound}
-                  />
-                ));
-                
-                // For mobile, just render normally
-                if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                  return [...timeComponents, ...ampmChars];
-                }
-                
-                // For desktop, ensure exactly 10 cells with centered text
-                const allComponents = [...timeComponents, ...ampmChars];
-                const totalComponents = allComponents.length;
-                const emptyFlapsNeeded = 10 - totalComponents;
-                
-                // Calculate left and right padding
-                const leftPadding = 0;
-                const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
+                const rightPadding = emptyFlapsNeeded;
                 
                 return (
                   <>
@@ -614,8 +506,14 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                       </div>
                     ))}
                     
-                    {/* Time components */}
-                    {allComponents}
+                    {/* Actual characters, only show what fits in 10 cells */}
+                    {chars.slice(0, 10).map((char, index) => (
+                      <SplitFlapChar 
+                        key={`time-${index}`} 
+                        value={char} 
+                        initialAnimation={initialLoad}
+                      />
+                    ))}
                     
                     {/* Right empty flaps */}
                     {Array(rightPadding).fill(0).map((_, i) => (
@@ -628,62 +526,59 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                 );
               })()}
             </div>
-          </div>
-        </div>
-        
-        {/* Opponent Name Panel */}
-        <div className="splitflap-display mt-6">
-          <div className="flex flex-col space-y-4">
-            {(() => {
-              // Break opponent name into multiple lines if longer than 12 characters
-              const opponentName = match.awayTeam.toUpperCase();
-              if (opponentName.length <= 12) {
-                return (
-                  <div className="flex justify-center space-x-1 md:fixed-width-panel">
+            
+            {/* Opponent Panel (multi-line if needed) */}
+            {match?.opponent && (
+              <>
+                <div className="flex justify-center space-x-1 md:fixed-width-panel">
+                  <div className="text-xs text-gray-500 mb-1">OPPONENT</div>
+                </div>
+                
+                {chunkText(match.opponent.toUpperCase(), 12).map((line, lineIndex) => (
+                  <div key={`opponent-line-${lineIndex}`} className="flex justify-center space-x-1 md:fixed-width-panel">
                     {(() => {
                       // For mobile, just render the characters normally
                       if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                        return opponentName.split('').map((char: string, index: number) => (
+                        return line.split('').map((char, index) => (
                           <SplitFlapChar 
-                            key={`opponent-${index}`} 
+                            key={`opponent-${lineIndex}-${index}`} 
                             value={char} 
                             initialAnimation={initialLoad}
                           />
                         ));
                       }
                       
-                      // For desktop, ensure exactly 10 cells with centered text
-                      const chars = opponentName.split('');
+                      // For desktop, ensure exactly 10 cells with left-aligned text
+                      const chars = line.split('');
                       const totalChars = chars.length;
-                      const emptyFlapsNeeded = 10 - totalChars;
+                      const emptyFlapsNeeded = Math.max(0, 10 - totalChars);
                       
-                      // Calculate left and right padding
+                      // For left alignment, no left padding needed
                       const leftPadding = 0;
-                      const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
+                      const rightPadding = emptyFlapsNeeded;
                       
                       return (
                         <>
                           {/* Left empty flaps */}
                           {Array(leftPadding).fill(0).map((_, i) => (
-                            <div key={`opp-left-empty-${i}`} className="empty-flap">
+                            <div key={`opponent-${lineIndex}-left-empty-${i}`} className="empty-flap">
                               <div className="splitflap-dot left"></div>
                               <div className="splitflap-dot right"></div>
                             </div>
                           ))}
                           
                           {/* Actual characters */}
-                          {chars.map((char: string, index: number) => (
+                          {chars.map((char, index) => (
                             <SplitFlapChar 
-                              key={`opponent-${index}`} 
+                              key={`opponent-${lineIndex}-${index}`} 
                               value={char} 
                               initialAnimation={initialLoad}
-                              playSound={playClickSound}
                             />
                           ))}
                           
                           {/* Right empty flaps */}
                           {Array(rightPadding).fill(0).map((_, i) => (
-                            <div key={`opp-right-empty-${i}`} className="empty-flap">
+                            <div key={`opponent-${lineIndex}-right-empty-${i}`} className="empty-flap">
                               <div className="splitflap-dot left"></div>
                               <div className="splitflap-dot right"></div>
                             </div>
@@ -692,238 +587,186 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                       );
                     })()}
                   </div>
-                );
-              } else {
-                // Split into two lines
-                const midPoint = Math.ceil(opponentName.length / 2);
-                const firstLine = opponentName.substring(0, midPoint);
-                const secondLine = opponentName.substring(midPoint);
-                
-                return (
-                  <>
-                    <div className="flex justify-center space-x-1 md:fixed-width-panel">
-                      {(() => {
-                        // For mobile, just render the characters normally
-                        if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                          return firstLine.split('').map((char: string, index: number) => (
-                            <SplitFlapChar 
-                              key={`opponent1-${index}`} 
-                              value={char} 
-                              initialAnimation={initialLoad}
-                              playSound={playClickSound}
-                            />
-                          ));
-                        }
-                        
-                        // For desktop, ensure exactly 10 cells with centered text
-                        const chars = firstLine.split('');
-                        const totalChars = chars.length;
-                        const emptyFlapsNeeded = 10 - totalChars;
-                        
-                        // Calculate left and right padding
-                        const leftPadding = 0;
-                        const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
-                        
-                        return (
-                          <>
-                            {/* Left empty flaps */}
-                            {Array(leftPadding).fill(0).map((_, i) => (
-                              <div key={`opp1-left-empty-${i}`} className="empty-flap">
-                                <div className="splitflap-dot left"></div>
-                                <div className="splitflap-dot right"></div>
-                              </div>
-                            ))}
-                            
-                            {/* Actual characters */}
-                            {chars.map((char: string, index: number) => (
-                              <SplitFlapChar 
-                                key={`opponent1-${index}`} 
-                                value={char} 
-                                initialAnimation={initialLoad}
-                              />
-                            ))}
-                            
-                            {/* Right empty flaps */}
-                            {Array(rightPadding).fill(0).map((_, i) => (
-                              <div key={`opp1-right-empty-${i}`} className="empty-flap">
-                                <div className="splitflap-dot left"></div>
-                                <div className="splitflap-dot right"></div>
-                              </div>
-                            ))}
-                          </>
-                        );
-                      })()}
-                    </div>
-                    <div className="flex justify-center space-x-1 md:fixed-width-panel">
-                      {(() => {
-                        // For mobile, just render the characters normally
-                        if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                          return secondLine.split('').map((char: string, index: number) => (
-                            <SplitFlapChar 
-                              key={`opponent2-${index}`} 
-                              value={char} 
-                              initialAnimation={initialLoad}
-                              playSound={playClickSound}
-                            />
-                          ));
-                        }
-                        
-                        // For desktop, ensure exactly 10 cells with centered text
-                        const chars = secondLine.split('');
-                        const totalChars = chars.length;
-                        const emptyFlapsNeeded = 10 - totalChars;
-                        
-                        // Calculate left and right padding
-                        const leftPadding = 0;
-                        const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
-                        
-                        return (
-                          <>
-                            {/* Left empty flaps */}
-                            {Array(leftPadding).fill(0).map((_, i) => (
-                              <div key={`opp2-left-empty-${i}`} className="empty-flap">
-                                <div className="splitflap-dot left"></div>
-                                <div className="splitflap-dot right"></div>
-                              </div>
-                            ))}
-                            
-                            {/* Actual characters */}
-                            {chars.map((char: string, index: number) => (
-                              <SplitFlapChar 
-                                key={`opponent2-${index}`} 
-                                value={char} 
-                                initialAnimation={initialLoad}
-                              />
-                            ))}
-                            
-                            {/* Right empty flaps */}
-                            {Array(rightPadding).fill(0).map((_, i) => (
-                              <div key={`opp2-right-empty-${i}`} className="empty-flap">
-                                <div className="splitflap-dot left"></div>
-                                <div className="splitflap-dot right"></div>
-                              </div>
-                            ))}
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </>
-                );
-              }
-            })()}
-          </div>
-        </div>
-        
-        {/* Competition and TV Channel Panel */}
-        <div className="splitflap-display mt-6">
-          <div className="flex flex-col space-y-4">
-            {/* Competition Name - Split into two lines */}
-            {match.competition === "Premier League" ? (
+                ))}
+              </>
+            )}
+            
+            {/* Competition Panel (multi-line if needed) */}
+            {match?.competition && (
               <>
                 <div className="flex justify-center space-x-1 md:fixed-width-panel">
-                  {(() => {
-                    const text = "PREMIER";
-                    
-                    // For mobile, just render the characters normally
-                    if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                      return text.split('').map((char: string, index: number) => (
-                        <SplitFlapChar 
-                          key={`competition1-${index}`} 
-                          value={char} 
-                          initialAnimation={initialLoad}
-                          playSound={playClickSound}
-                        />
-                      ));
-                    }
-                    
-                    // For desktop, ensure exactly 10 cells with centered text
-                    const chars = text.split('');
-                    const totalChars = chars.length;
-                    const emptyFlapsNeeded = 10 - totalChars;
-                    
-                    // Calculate left and right padding
-                    const leftPadding = 0;
-                    const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
-                    
-                    return (
-                      <>
-                        {/* Left empty flaps */}
-                        {Array(leftPadding).fill(0).map((_, i) => (
-                          <div key={`premier-left-empty-${i}`} className="empty-flap">
-                            <div className="splitflap-dot left"></div>
-                            <div className="splitflap-dot right"></div>
-                          </div>
-                        ))}
-                        
-                        {/* Actual characters */}
-                        {chars.map((char: string, index: number) => (
-                          <SplitFlapChar 
-                            key={`competition1-${index}`} 
-                            value={char} 
-                            initialAnimation={initialLoad}
-                            playSound={playClickSound}
-                          />
-                        ))}
-                        
-                        {/* Right empty flaps */}
-                        {Array(rightPadding).fill(0).map((_, i) => (
-                          <div key={`premier-right-empty-${i}`} className="empty-flap">
-                            <div className="splitflap-dot left"></div>
-                            <div className="splitflap-dot right"></div>
-                          </div>
-                        ))}
-                      </>
-                    );
-                  })()}
+                  <div className="text-xs text-gray-500 mb-1">COMPETITION</div>
                 </div>
+                
+                {match.competition.toLowerCase() === "premier league" ? 
+                  // Special case for "Premier League" - split into exactly two lines
+                  ["PREMIER", "LEAGUE"].map((line, lineIndex) => (
+                    <div key={`competition-line-${lineIndex}`} className="flex justify-center space-x-1 md:fixed-width-panel">
+                      {(() => {
+                        // For mobile, just render the characters normally
+                        if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                          return line.split('').map((char, index) => (
+                            <SplitFlapChar 
+                              key={`competition-${lineIndex}-${index}`} 
+                              value={char} 
+                              initialAnimation={initialLoad}
+                            />
+                          ));
+                        }
+                        
+                        // For desktop, ensure exactly 10 cells with left-aligned text
+                        const chars = line.split('');
+                        const totalChars = chars.length;
+                        const emptyFlapsNeeded = Math.max(0, 10 - totalChars);
+                        
+                        // For left alignment, no left padding needed
+                        const leftPadding = 0;
+                        const rightPadding = emptyFlapsNeeded;
+                        
+                        return (
+                          <>
+                            {/* Left empty flaps */}
+                            {Array(leftPadding).fill(0).map((_, i) => (
+                              <div key={`competition-${lineIndex}-left-empty-${i}`} className="empty-flap">
+                                <div className="splitflap-dot left"></div>
+                                <div className="splitflap-dot right"></div>
+                              </div>
+                            ))}
+                            
+                            {/* Actual characters */}
+                            {chars.map((char, index) => (
+                              <SplitFlapChar 
+                                key={`competition-${lineIndex}-${index}`} 
+                                value={char} 
+                                initialAnimation={initialLoad}
+                              />
+                            ))}
+                            
+                            {/* Right empty flaps */}
+                            {Array(rightPadding).fill(0).map((_, i) => (
+                              <div key={`competition-${lineIndex}-right-empty-${i}`} className="empty-flap">
+                                <div className="splitflap-dot left"></div>
+                                <div className="splitflap-dot right"></div>
+                              </div>
+                            ))}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  ))
+                  :
+                  // Other competitions split by max length
+                  chunkText(match.competition.toUpperCase(), 12).map((line, lineIndex) => (
+                    <div key={`competition-line-${lineIndex}`} className="flex justify-center space-x-1 md:fixed-width-panel">
+                      {(() => {
+                        // For mobile, just render the characters normally
+                        if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                          return line.split('').map((char, index) => (
+                            <SplitFlapChar 
+                              key={`competition-${lineIndex}-${index}`} 
+                              value={char} 
+                              initialAnimation={initialLoad}
+                            />
+                          ));
+                        }
+                        
+                        // For desktop, ensure exactly 10 cells with left-aligned text
+                        const chars = line.split('');
+                        const totalChars = chars.length;
+                        const emptyFlapsNeeded = Math.max(0, 10 - totalChars);
+                        
+                        // For left alignment, no left padding needed
+                        const leftPadding = 0;
+                        const rightPadding = emptyFlapsNeeded;
+                        
+                        return (
+                          <>
+                            {/* Left empty flaps */}
+                            {Array(leftPadding).fill(0).map((_, i) => (
+                              <div key={`competition-${lineIndex}-left-empty-${i}`} className="empty-flap">
+                                <div className="splitflap-dot left"></div>
+                                <div className="splitflap-dot right"></div>
+                              </div>
+                            ))}
+                            
+                            {/* Actual characters */}
+                            {chars.map((char, index) => (
+                              <SplitFlapChar 
+                                key={`competition-${lineIndex}-${index}`} 
+                                value={char} 
+                                initialAnimation={initialLoad}
+                              />
+                            ))}
+                            
+                            {/* Right empty flaps */}
+                            {Array(rightPadding).fill(0).map((_, i) => (
+                              <div key={`competition-${lineIndex}-right-empty-${i}`} className="empty-flap">
+                                <div className="splitflap-dot left"></div>
+                                <div className="splitflap-dot right"></div>
+                              </div>
+                            ))}
+                          </>
+                        );
+                      })()}
+                    </div>
+                  ))
+                }
+              </>
+            )}
+            
+            {/* TV broadcast Panel */}
+            {match?.broadcaster && (
+              <>
+                <div className="flex justify-center space-x-1 md:fixed-width-panel">
+                  <div className="text-xs text-gray-500 mb-1">WATCH ON</div>
+                </div>
+                
                 <div className="flex justify-center space-x-1 md:fixed-width-panel">
                   {(() => {
-                    const text = "LEAGUE";
+                    const broadcastText = match.broadcaster.toUpperCase();
                     
                     // For mobile, just render the characters normally
                     if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                      return text.split('').map((char: string, index: number) => (
+                      return broadcastText.split('').map((char, index) => (
                         <SplitFlapChar 
-                          key={`competition2-${index}`} 
+                          key={`broadcast-${index}`} 
                           value={char} 
                           initialAnimation={initialLoad}
-                          playSound={playClickSound}
                         />
                       ));
                     }
                     
-                    // For desktop, ensure exactly 10 cells with centered text
-                    const chars = text.split('');
+                    // For desktop, ensure exactly 10 cells with left-aligned text
+                    const chars = broadcastText.split('');
                     const totalChars = chars.length;
-                    const emptyFlapsNeeded = 10 - totalChars;
+                    const emptyFlapsNeeded = Math.max(0, 10 - totalChars);
                     
-                    // Calculate left and right padding
+                    // For left alignment, no left padding needed
                     const leftPadding = 0;
-                    const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
+                    const rightPadding = emptyFlapsNeeded;
                     
                     return (
                       <>
                         {/* Left empty flaps */}
                         {Array(leftPadding).fill(0).map((_, i) => (
-                          <div key={`league-left-empty-${i}`} className="empty-flap">
+                          <div key={`broadcast-left-empty-${i}`} className="empty-flap">
                             <div className="splitflap-dot left"></div>
                             <div className="splitflap-dot right"></div>
                           </div>
                         ))}
                         
                         {/* Actual characters */}
-                        {chars.map((char: string, index: number) => (
+                        {chars.slice(0, 10).map((char, index) => (
                           <SplitFlapChar 
-                            key={`competition2-${index}`} 
+                            key={`broadcast-${index}`} 
                             value={char} 
                             initialAnimation={initialLoad}
-                            playSound={playClickSound}
                           />
                         ))}
                         
                         {/* Right empty flaps */}
                         {Array(rightPadding).fill(0).map((_, i) => (
-                          <div key={`league-right-empty-${i}`} className="empty-flap">
+                          <div key={`broadcast-right-empty-${i}`} className="empty-flap">
                             <div className="splitflap-dot left"></div>
                             <div className="splitflap-dot right"></div>
                           </div>
@@ -933,126 +776,22 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                   })()}
                 </div>
               </>
-            ) : (
-              <div className="flex justify-center space-x-1 md:fixed-width-panel">
-                {(() => {
-                  const text = match.competition.toUpperCase();
-                  
-                  // For mobile, just render the characters normally
-                  if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                    return text.split('').map((char: string, index: number) => (
-                      <SplitFlapChar 
-                        key={`competition-${index}`} 
-                        value={char} 
-                        initialAnimation={initialLoad}
-                      />
-                    ));
-                  }
-                  
-                  // For desktop, ensure exactly 10 cells with centered text
-                  const chars = text.split('');
-                  const totalChars = chars.length;
-                  const emptyFlapsNeeded = 10 - totalChars;
-                  
-                  // Calculate left and right padding
-                  const leftPadding = 0;
-                  const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
-                  
-                  return (
-                    <>
-                      {/* Left empty flaps */}
-                      {Array(leftPadding).fill(0).map((_, i) => (
-                        <div key={`comp-left-empty-${i}`} className="empty-flap">
-                          <div className="splitflap-dot left"></div>
-                          <div className="splitflap-dot right"></div>
-                        </div>
-                      ))}
-                      
-                      {/* Actual characters */}
-                      {chars.map((char: string, index: number) => (
-                        <SplitFlapChar 
-                          key={`competition-${index}`} 
-                          value={char} 
-                          initialAnimation={initialLoad}
-                        />
-                      ))}
-                      
-                      {/* Right empty flaps */}
-                      {Array(rightPadding).fill(0).map((_, i) => (
-                        <div key={`comp-right-empty-${i}`} className="empty-flap">
-                          <div className="splitflap-dot left"></div>
-                          <div className="splitflap-dot right"></div>
-                        </div>
-                      ))}
-                    </>
-                  );
-                })()}
-              </div>
             )}
-            
-            {/* TV Channel */}
-            <div className="flex justify-center space-x-1 md:fixed-width-panel">
-              {(() => {
-                const text = "PEACOCK";
-                
-                // For mobile, just render the characters normally
-                if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                  return text.split('').map((char: string, index: number) => (
-                    <SplitFlapChar 
-                      key={`channel-${index}`} 
-                      value={char} 
-                      initialAnimation={initialLoad}
-                    />
-                  ));
-                }
-                
-                // For desktop, ensure exactly 10 cells with centered text
-                const chars = text.split('');
-                const totalChars = chars.length;
-                const emptyFlapsNeeded = 10 - totalChars;
-                
-                // Calculate left and right padding
-                const leftPadding = 0;
-                const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
-                
-                return (
-                  <>
-                    {/* Left empty flaps */}
-                    {Array(leftPadding).fill(0).map((_, i) => (
-                      <div key={`channel-left-empty-${i}`} className="empty-flap">
-                        <div className="splitflap-dot left"></div>
-                        <div className="splitflap-dot right"></div>
-                      </div>
-                    ))}
-                    
-                    {/* Actual characters */}
-                    {chars.map((char: string, index: number) => (
-                      <SplitFlapChar 
-                        key={`channel-${index}`} 
-                        value={char} 
-                        initialAnimation={initialLoad}
-                        playSound={playClickSound}
-                      />
-                    ))}
-                    
-                    {/* Right empty flaps */}
-                    {Array(rightPadding).fill(0).map((_, i) => (
-                      <div key={`channel-right-empty-${i}`} className="empty-flap">
-                        <div className="splitflap-dot left"></div>
-                        <div className="splitflap-dot right"></div>
-                      </div>
-                    ))}
-                  </>
-                );
-              })()}
-            </div>
           </div>
+        </div>
+        
+        {/* Sound Button and Calendar Button */}
+        <div className="flex flex-col md:flex-row items-center justify-center gap-4 mt-8">
+          <SoundButton />
           
-          {/* Sound toggle button */}
-          <div className="mt-4">
-            {/* Use standalone sound button component */}
-            <SoundButton />
-          </div>
+          <Button
+            onClick={handleAddToCalendar}
+            variant="outline"
+            className="bg-black/50 text-white border-white/20 hover:bg-gray-900"
+          >
+            <CalendarIcon className="h-4 w-4 mr-2" />
+            Add to Calendar
+          </Button>
         </div>
       </CardContent>
     </Card>
