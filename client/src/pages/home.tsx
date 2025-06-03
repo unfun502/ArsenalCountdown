@@ -13,24 +13,64 @@ export default function Home() {
   const { toast } = useToast();
   
   const { data: match, isLoading, error } = useQuery<Match>({
-    queryKey: ['/api/next-match']
+    queryKey: ['/api/next-match'],
+    retry: (failureCount, error: any) => {
+      // Don't retry if it's a 404 (no matches found)
+      if (error?.response?.status === 404) {
+        return false;
+      }
+      return failureCount < 3;
+    }
   });
   
   useEffect(() => {
     if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to load match data. Please try again later.",
-        variant: "destructive"
-      });
+      const errorResponse = error as any;
+      if (errorResponse?.response?.status !== 404) {
+        toast({
+          title: "Error",
+          description: "Failed to load match data. Please try again later.",
+          variant: "destructive"
+        });
+      }
     }
   }, [error, toast]);
 
+  // Handle case when no matches are found (404 error)
+  const errorResponse = error as any;
+  if (errorResponse?.response?.status === 404) {
+    return (
+      <div className="min-h-screen bg-[#1E1E1E] flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-white mb-4">Arsenal FC</h1>
+            <div className="text-6xl mb-4">⚽</div>
+          </div>
+          
+          <h2 className="text-2xl font-bold text-white mb-4">Season Complete</h2>
+          <p className="text-white/70 mb-6">
+            No upcoming matches scheduled at this time. The current season may have ended or there might be a break in fixtures.
+          </p>
+          
+          <div className="space-y-4">
+            <p className="text-white/50 text-sm">
+              Check back later for updates on the next season's fixtures.
+            </p>
+            
+            <div className="text-white/50 text-sm mt-8">
+              <p>© {new Date().getFullYear()} Arsenal Match Countdown</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (error) {
     return (
-      <div className="min-h-screen bg-codepen-black flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#1E1E1E] flex items-center justify-center p-4">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-codepen-purple mb-2">Unable to Load Match Data</h1>
+          <h1 className="text-2xl font-bold text-red-400 mb-2">Unable to Load Match Data</h1>
           <p className="text-white/70">Please check your connection and try again</p>
         </div>
       </div>

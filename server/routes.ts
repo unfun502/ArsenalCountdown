@@ -37,20 +37,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log("Fetching new match data from API");
-      // Fetch from football-data.org API
-      const response = await axios.get(
-        "https://api.football-data.org/v4/teams/57/matches?status=SCHEDULED&limit=1",
-        {
-          headers: { "X-Auth-Token": FOOTBALL_DATA_API_KEY }
-        }
-      );
-
-      console.log("API Response:", JSON.stringify(response.data, null, 2));
       
-      const nextMatch = response.data.matches[0];
+      // Try multiple approaches to find matches
+      let response;
+      let nextMatch = null;
+      
+      // First try: Arsenal team specific matches
+      try {
+        response = await axios.get(
+          "https://api.football-data.org/v4/teams/57/matches?status=SCHEDULED&limit=1",
+          {
+            headers: { "X-Auth-Token": FOOTBALL_DATA_API_KEY }
+          }
+        );
+        nextMatch = response.data.matches[0];
+        console.log("Team-specific API Response:", JSON.stringify(response.data, null, 2));
+      } catch (error) {
+        console.log("Team-specific API failed:", error.message);
+      }
+      
+      // Second try: Premier League matches if no team matches found
       if (!nextMatch) {
-        console.log("No upcoming matches found in API response");
-        return res.status(404).json({ message: "No upcoming matches found" });
+        try {
+          response = await axios.get(
+            "https://api.football-data.org/v4/competitions/PL/matches?status=SCHEDULED&limit=10",
+            {
+              headers: { "X-Auth-Token": FOOTBALL_DATA_API_KEY }
+            }
+          );
+          
+          // Look for Arsenal in the matches
+          const arsenalMatch = response.data.matches.find(match => 
+            match.homeTeam.id === 57 || match.awayTeam.id === 57
+          );
+          
+          if (arsenalMatch) {
+            nextMatch = arsenalMatch;
+            console.log("Found Arsenal match in PL fixtures");
+          }
+        } catch (error) {
+          console.log("Premier League API failed:", error.message);
+        }
+      }
+      
+      // Third try: Look in Champions League or other competitions
+      if (!nextMatch) {
+        try {
+          response = await axios.get(
+            "https://api.football-data.org/v4/competitions/CL/matches?status=SCHEDULED&limit=20",
+            {
+              headers: { "X-Auth-Token": FOOTBALL_DATA_API_KEY }
+            }
+          );
+          
+          // Look for Arsenal in Champions League matches
+          const arsenalMatch = response.data.matches.find(match => 
+            match.homeTeam.id === 57 || match.awayTeam.id === 57
+          );
+          
+          if (arsenalMatch) {
+            nextMatch = arsenalMatch;
+            console.log("Found Arsenal match in CL fixtures");
+          }
+        } catch (error) {
+          console.log("Champions League API failed:", error.message);
+        }
+      }
+      
+      if (!nextMatch) {
+        console.log("No upcoming matches found in any competition");
+        return res.status(404).json({ 
+          message: "No upcoming matches found",
+          seasonStatus: "off-season"
+        });
       }
 
       // Transform to our schema
