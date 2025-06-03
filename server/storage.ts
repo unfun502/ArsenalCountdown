@@ -3,6 +3,7 @@ import { type Match, type InsertMatch } from "@shared/schema";
 export interface IStorage {
   getNextMatch(): Promise<Match | undefined>;
   insertMatch(match: InsertMatch): Promise<Match>;
+  clearCache(): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -22,9 +23,18 @@ export class MemStorage implements IStorage {
 
   async insertMatch(insertMatch: InsertMatch): Promise<Match> {
     const id = this.currentId++;
-    const match = { ...insertMatch, id };
+    const match = { 
+      ...insertMatch, 
+      id,
+      broadcasts: insertMatch.broadcasts || {}
+    };
     this.matches.set(id, match);
     return match;
+  }
+
+  async clearCache(): Promise<void> {
+    this.matches.clear();
+    console.log("Storage cache cleared");
   }
 }
 

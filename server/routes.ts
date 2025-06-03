@@ -45,14 +45,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // First try: Arsenal team specific matches
       try {
         response = await axios.get(
-          "https://api.football-data.org/v4/teams/57/matches?status=SCHEDULED&limit=1",
+          "https://api.football-data.org/v4/teams/57/matches?status=SCHEDULED&limit=10",
           {
             headers: { "X-Auth-Token": FOOTBALL_DATA_API_KEY }
           }
         );
-        nextMatch = response.data.matches[0];
+        
+        // Filter out matches that are in the past (even if marked as SCHEDULED)
+        const now = new Date();
+        const futureMatches = response.data.matches.filter((match: any) => {
+          const matchDate = new Date(match.utcDate);
+          return matchDate > now;
+        });
+        
+        nextMatch = futureMatches[0];
         console.log("Team-specific API Response:", JSON.stringify(response.data, null, 2));
-      } catch (error) {
+        console.log("Future matches found:", futureMatches.length);
+      } catch (error: any) {
         console.log("Team-specific API failed:", error.message);
       }
       
@@ -60,22 +69,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!nextMatch) {
         try {
           response = await axios.get(
-            "https://api.football-data.org/v4/competitions/PL/matches?status=SCHEDULED&limit=10",
+            "https://api.football-data.org/v4/competitions/PL/matches?status=SCHEDULED&limit=50",
             {
               headers: { "X-Auth-Token": FOOTBALL_DATA_API_KEY }
             }
           );
           
-          // Look for Arsenal in the matches
-          const arsenalMatch = response.data.matches.find(match => 
-            match.homeTeam.id === 57 || match.awayTeam.id === 57
-          );
+          const now = new Date();
+          
+          // Look for Arsenal in future matches only
+          const arsenalMatch = response.data.matches.find((match: any) => {
+            const matchDate = new Date(match.utcDate);
+            const isArsenalMatch = match.homeTeam.id === 57 || match.awayTeam.id === 57;
+            const isFuture = matchDate > now;
+            return isArsenalMatch && isFuture;
+          });
           
           if (arsenalMatch) {
             nextMatch = arsenalMatch;
             console.log("Found Arsenal match in PL fixtures");
           }
-        } catch (error) {
+        } catch (error: any) {
           console.log("Premier League API failed:", error.message);
         }
       }
@@ -84,22 +98,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!nextMatch) {
         try {
           response = await axios.get(
-            "https://api.football-data.org/v4/competitions/CL/matches?status=SCHEDULED&limit=20",
+            "https://api.football-data.org/v4/competitions/CL/matches?status=SCHEDULED&limit=50",
             {
               headers: { "X-Auth-Token": FOOTBALL_DATA_API_KEY }
             }
           );
           
-          // Look for Arsenal in Champions League matches
-          const arsenalMatch = response.data.matches.find(match => 
-            match.homeTeam.id === 57 || match.awayTeam.id === 57
-          );
+          const now = new Date();
+          
+          // Look for Arsenal in future Champions League matches only
+          const arsenalMatch = response.data.matches.find((match: any) => {
+            const matchDate = new Date(match.utcDate);
+            const isArsenalMatch = match.homeTeam.id === 57 || match.awayTeam.id === 57;
+            const isFuture = matchDate > now;
+            return isArsenalMatch && isFuture;
+          });
           
           if (arsenalMatch) {
             nextMatch = arsenalMatch;
             console.log("Found Arsenal match in CL fixtures");
           }
-        } catch (error) {
+        } catch (error: any) {
           console.log("Champions League API failed:", error.message);
         }
       }
@@ -111,6 +130,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           seasonStatus: "off-season"
         });
       }
+
+      // Clear any old cache first
+      await storage.clearCache();
 
       // Transform to our schema
       const matchData = {
@@ -140,6 +162,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(500).json({ message: "Internal server error" });
       }
+    }
+  });
+
+  app.post("/api/clear-cache", async (req, res) => {
+    try {
+      await storage.clearCache();
+      res.json({ message: "Cache cleared successfully" });
+    } catch (error) {
+      console.error("Error clearing cache:", error);
+      res.status(500).json({ message: "Failed to clear cache" });
     }
   });
 
