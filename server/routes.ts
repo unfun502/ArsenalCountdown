@@ -15,7 +15,7 @@ const FOOTBALL_DATA_API_KEY = process.env.FOOTBALL_DATA_API_KEY;
 
 // Cache to prevent excessive API calls when no matches are found
 let noMatchesCache: { timestamp: number; duration: number } | null = null;
-const NO_MATCHES_CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+const NO_MATCHES_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Serve sound files with the correct content type

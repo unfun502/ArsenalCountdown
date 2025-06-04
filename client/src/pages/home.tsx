@@ -45,42 +45,61 @@ export default function Home() {
     }
   }, [error, toast]);
 
-  // Handle case when no matches are found (404 error)
+  // Handle case when no matches are found (legitimate off-season)
   const errorResponse = error as any;
   if (errorResponse?.response?.status === 404) {
+    const responseData = errorResponse?.response?.data;
+    if (responseData?.seasonStatus === 'off-season') {
+      return (
+        <div className="min-h-screen bg-[#1E1E1E] flex items-center justify-center p-4">
+          <div className="text-center max-w-md">
+            <div className="mb-8">
+              <h1 className="text-6xl font-bold text-[#FF0000] mb-4">
+                ARSENAL
+              </h1>
+              <div className="text-white text-xl mb-4">
+                Season Complete
+              </div>
+              <p className="text-gray-400 text-sm">
+                No upcoming fixtures scheduled. Check back during the new season.
+              </p>
+            </div>
+            
+            <div className="text-gray-500 text-xs">
+              © {new Date().getFullYear()} Arsenal Football Club
+            </div>
+          </div>
+        </div>
+      );
+    }
+  }
+
+  // Handle genuine API errors (connection issues, server errors, etc.)
+  if (error) {
     return (
       <div className="min-h-screen bg-[#1E1E1E] flex items-center justify-center p-4">
         <div className="text-center max-w-md">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-4">Arsenal FC</h1>
-            <div className="text-6xl mb-4">⚽</div>
-          </div>
-          
-          <h2 className="text-2xl font-bold text-white mb-4">Season Complete</h2>
-          <p className="text-white/70 mb-6">
-            No upcoming matches scheduled at this time. The current season may have ended or there might be a break in fixtures.
-          </p>
-          
-          <div className="space-y-4">
-            <p className="text-white/50 text-sm">
-              Check back later for updates on the next season's fixtures.
-            </p>
-            
-            <div className="text-white/50 text-sm mt-8">
-              <p>© {new Date().getFullYear()} Arsenal Match Countdown</p>
+            <h1 className="text-6xl font-bold text-[#FF0000] mb-4">
+              ARSENAL
+            </h1>
+            <div className="text-red-400 text-xl mb-4">
+              Connection Error
             </div>
+            <p className="text-gray-400 text-sm mb-6">
+              Unable to connect to match data service. Please check your connection and try again.
+            </p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-6 py-3 bg-[#FF0000] text-white rounded-lg hover:bg-red-700 transition-colors font-semibold"
+            >
+              Try Again
+            </button>
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-[#1E1E1E] flex items-center justify-center p-4">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-400 mb-2">Unable to Load Match Data</h1>
-          <p className="text-white/70">Please check your connection and try again</p>
+          
+          <div className="text-gray-500 text-xs">
+            © {new Date().getFullYear()} Arsenal Football Club
+          </div>
         </div>
       </div>
     );
