@@ -14,13 +14,22 @@ export default function Home() {
   
   const { data: match, isLoading, error } = useQuery<Match>({
     queryKey: ['/api/next-match'],
+    staleTime: 30 * 60 * 1000, // 30 minutes - cache longer to avoid rate limits
+    refetchInterval: false, // Don't auto-refetch
+    refetchOnWindowFocus: false, // Don't refetch on window focus
     retry: (failureCount, error: any) => {
-      // Don't retry if it's a 404 (no matches found)
+      // Don't retry on 404 (no matches found) - this is expected during off-season
       if (error?.response?.status === 404) {
         return false;
       }
-      return failureCount < 3;
-    }
+      // Don't retry on 429 (rate limit) - wait for cache to expire
+      if (error?.response?.status === 429) {
+        return false;
+      }
+      // Retry up to 2 times for other errors with longer delays
+      return failureCount < 2;
+    },
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
   
   useEffect(() => {
