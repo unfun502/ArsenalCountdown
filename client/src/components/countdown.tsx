@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { atcb_action } from "add-to-calendar-button";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon, Volume2, VolumeX } from "lucide-react";
+import { BROADCASTERS } from "@shared/constants";
 import { 
   enableSound, 
   disableSound, 
@@ -285,6 +286,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
   const [initialLoad, setInitialLoad] = useState(true);
   const [fakeDigits, setFakeDigits] = useState<TimeLeft>({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [soundOn, setSoundOn] = useState(false);
+  const [userCountry, setUserCountry] = useState<string>("");
   const initialAnimationRef = useRef<NodeJS.Timeout | null>(null);
   
   // Initial animation that cycles through random numbers more slowly
@@ -389,6 +391,14 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
     if (hasSavedPreference) {
       setSoundOn(true);
     }
+  }, []);
+
+  // Fetch user location for broadcaster info
+  useEffect(() => {
+    fetch("https://ipapi.co/json/")
+      .then(res => res.json())
+      .then(data => setUserCountry(data.country_code))
+      .catch(err => console.error("Failed to get user location:", err));
   }, []);
 
   // Simple sound playback function
@@ -1104,7 +1114,10 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
             {/* TV Channel */}
             <div className="flex justify-center space-x-1 md:fixed-width-panel">
               {(() => {
-                const text = "PEACOCK";
+                // Get broadcaster based on user's country
+                const broadcaster = userCountry && BROADCASTERS[userCountry];
+                const broadcasterName = broadcaster?.name || "CHECK LOCAL";
+                const text = broadcasterName.toUpperCase();
                 
                 // For mobile, just render the characters normally
                 if (typeof window !== 'undefined' && window.innerWidth < 768) {
