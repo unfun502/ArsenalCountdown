@@ -1114,9 +1114,33 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
             {/* TV Channel */}
             <div className="flex justify-center space-x-1 md:fixed-width-panel">
               {(() => {
-                // Get broadcaster based on user's country
-                const broadcaster = userCountry ? BROADCASTERS[userCountry] : null;
-                const broadcasterName = broadcaster?.name || "CHECK LOCAL";
+                // Get broadcaster based on competition and user's country
+                let broadcasterName = "CHECK LOCAL";
+                
+                if (userCountry === 'US') {
+                  if (match.competition === "Premier League") {
+                    broadcasterName = "NBC/PEACOCK";
+                  } else if (match.competition.includes("Champions League") || match.competition.includes("UEFA")) {
+                    broadcasterName = "CBS/PARA+";
+                  } else if (match.competition.includes("FA Cup") || match.competition.includes("League Cup") || match.competition.includes("EFL Cup")) {
+                    broadcasterName = "ESPN+";
+                  }
+                } else if (userCountry === 'GB') {
+                  if (match.competition === "Premier League") {
+                    broadcasterName = "SKY/TNT";
+                  } else if (match.competition.includes("Champions League") || match.competition.includes("UEFA")) {
+                    broadcasterName = "TNT SPORTS";
+                  } else if (match.competition.includes("FA Cup")) {
+                    broadcasterName = "BBC/ITV";
+                  } else if (match.competition.includes("League Cup") || match.competition.includes("EFL Cup")) {
+                    broadcasterName = "SKY SPORTS";
+                  }
+                } else {
+                  // For other countries, use the general broadcaster mapping
+                  const broadcaster = BROADCASTERS[userCountry];
+                  broadcasterName = broadcaster?.name || "CHECK LOCAL";
+                }
+                
                 let text = broadcasterName.toUpperCase();
                 
                 // Limit text to 10 characters for desktop display
