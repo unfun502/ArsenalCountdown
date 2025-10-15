@@ -745,8 +745,9 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
         <div className="splitflap-display mt-6">
           <div className="flex flex-col space-y-4">
             {(() => {
-              // Break opponent name into multiple lines if longer than 12 characters
-              const opponentName = match.awayTeam.toUpperCase();
+              // Determine opponent based on whether Arsenal is home or away
+              const isArsenalHome = match.homeTeam.toLowerCase().includes('arsenal');
+              const opponentName = (isArsenalHome ? match.awayTeam : match.homeTeam).toUpperCase();
               if (opponentName.length <= 12) {
                 return (
                   <div className="flex justify-center space-x-1 md:fixed-width-panel">
