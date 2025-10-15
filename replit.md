@@ -84,10 +84,24 @@ Preferred communication style: Simple, everyday language.
 ### External Dependencies
 
 **Third-Party APIs**
-- **Football-Data.org API**: Fetches Arsenal match schedules and details
+- **Football-Data.org API**: Fetches Premier League and Champions League match data
   - Requires `FOOTBALL_DATA_API_KEY` environment variable
-  - Rate limit considerations handled with caching strategy
+  - Free tier includes 12 competitions (Premier League, Champions League, etc.)
+  - Does NOT include FA Cup or League Cup (paid plans only)
   - Arsenal team ID: 57
+  - Rate limit: 10 requests per minute
+- **TheSportsDB.com API**: Fetches FA Cup and League Cup match data
+  - Requires `SPORTSDB_API_KEY` environment variable
+  - Arsenal team ID: 133604
+  - FA Cup league ID: 4482
+  - League Cup (EFL Cup/Carabao Cup) ID: 4570
+  - Only matches from these specific competitions are included in results
+  - Free tier returns 1 event; premium ($9/month) returns up to 10 events
+- **Dual-API Strategy**: 
+  - Fetches from both APIs simultaneously
+  - Combines and sorts all matches chronologically
+  - Displays the next upcoming match regardless of competition
+  - Ensures comprehensive coverage across Premier League, Champions League, FA Cup, and League Cup
 - **ipapi.co**: Geolocation service for determining user's country code
   - Used to provide relevant broadcaster information
   - No API key required for basic usage
