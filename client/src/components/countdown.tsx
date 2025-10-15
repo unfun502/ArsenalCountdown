@@ -1115,9 +1115,14 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
             <div className="flex justify-center space-x-1 md:fixed-width-panel">
               {(() => {
                 // Get broadcaster based on user's country
-                const broadcaster = userCountry && BROADCASTERS[userCountry];
+                const broadcaster = userCountry ? BROADCASTERS[userCountry] : null;
                 const broadcasterName = broadcaster?.name || "CHECK LOCAL";
-                const text = broadcasterName.toUpperCase();
+                let text = broadcasterName.toUpperCase();
+                
+                // Limit text to 10 characters for desktop display
+                if (typeof window !== 'undefined' && window.innerWidth >= 768 && text.length > 10) {
+                  text = text.substring(0, 10);
+                }
                 
                 // For mobile, just render the characters normally
                 if (typeof window !== 'undefined' && window.innerWidth < 768) {
@@ -1135,9 +1140,9 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                 const totalChars = chars.length;
                 const emptyFlapsNeeded = 10 - totalChars;
                 
-                // Calculate left and right padding
+                // Calculate left and right padding (ensure non-negative)
                 const leftPadding = 0;
-                const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
+                const rightPadding = Math.max(0, emptyFlapsNeeded); // Ensure non-negative
                 
                 return (
                   <>
