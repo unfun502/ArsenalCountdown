@@ -56,7 +56,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       try {
         const response = await axios.get(
-          "https://api.football-data.org/v4/teams/57/matches?status=SCHEDULED&limit=10",
+          "https://api.football-data.org/v4/teams/57/matches?status=SCHEDULED&limit=50",
           {
             headers: { "X-Auth-Token": FOOTBALL_DATA_API_KEY },
             timeout: 5000
@@ -70,8 +70,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return matchDate > now;
         });
         
-        nextMatch = futureMatches[0];
+        // Log all competitions found
+        const competitions = Array.from(new Set(futureMatches.map((m: any) => m.competition.name)));
         console.log("API Response - Future matches found:", futureMatches.length);
+        console.log("Competitions found:", competitions.join(", "));
+        
+        // Log all matches with dates and competitions
+        futureMatches.slice(0, 10).forEach((match: any) => {
+          console.log(`  - ${new Date(match.utcDate).toLocaleDateString()}: ${match.homeTeam.name} vs ${match.awayTeam.name} (${match.competition.name})`);
+        });
+        
+        // Sort by date to get the chronologically next match
+        futureMatches.sort((a: any, b: any) => {
+          return new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime();
+        });
+        
+        nextMatch = futureMatches[0];
+        console.log("Next match selected:", nextMatch?.homeTeam.name, "vs", nextMatch?.awayTeam.name, `(${nextMatch?.competition.name})`);
         
       } catch (error: any) {
         console.log("API failed:", error.message);
