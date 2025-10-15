@@ -11,7 +11,17 @@ if (!process.env.FOOTBALL_DATA_API_KEY) {
   throw new Error("FOOTBALL_DATA_API_KEY is required");
 }
 
+if (!process.env.SPORTSDB_API_KEY) {
+  throw new Error("SPORTSDB_API_KEY is required");
+}
+
 const FOOTBALL_DATA_API_KEY = process.env.FOOTBALL_DATA_API_KEY;
+const SPORTSDB_API_KEY = process.env.SPORTSDB_API_KEY;
+
+// TheSportsDB constants
+const ARSENAL_TEAM_ID = "133604";
+const FA_CUP_LEAGUE_ID = "4482";
+const LEAGUE_CUP_ID = "4570";
 
 // Cache to prevent excessive API calls when no matches are found
 let noMatchesCache: { timestamp: number; duration: number } | null = null;
@@ -49,11 +59,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      console.log("Fetching new match data from API");
+      console.log("Fetching new match data from APIs");
       
-      // Try to fetch from API with rate limiting awareness
-      let nextMatch = null;
+      const allMatches: any[] = [];
+      const now = new Date();
       
+      // Fetch from Football Data API (Premier League + Champions League)
       try {
         const response = await axios.get(
           "https://api.football-data.org/v4/teams/57/matches?status=SCHEDULED&limit=50",
@@ -63,51 +74,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         );
         
-        // Filter out matches that are in the past
-        const now = new Date();
-        const futureMatches = response.data.matches.filter((match: any) => {
-          const matchDate = new Date(match.utcDate);
-          return matchDate > now;
-        });
+        const futureMatches = response.data.matches
+          .filter((match: any) => new Date(match.utcDate) > now)
+          .map((match: any) => ({
+            competition: { name: match.competition.name },
+            homeTeam: { name: match.homeTeam.name, id: match.homeTeam.id },
+            awayTeam: { name: match.awayTeam.name, id: match.awayTeam.id },
+            venue: match.venue || "Emirates Stadium",
+            utcDate: match.utcDate,
+            source: "football-data"
+          }));
         
-        // Log all competitions found
-        const competitions = Array.from(new Set(futureMatches.map((m: any) => m.competition.name)));
-        console.log("API Response - Future matches found:", futureMatches.length);
-        console.log("Competitions found:", competitions.join(", "));
-        
-        // Log all matches with dates and competitions
-        futureMatches.slice(0, 10).forEach((match: any) => {
-          console.log(`  - ${new Date(match.utcDate).toLocaleDateString()}: ${match.homeTeam.name} vs ${match.awayTeam.name} (${match.competition.name})`);
-        });
-        
-        // Sort by date to get the chronologically next match
-        futureMatches.sort((a: any, b: any) => {
-          return new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime();
-        });
-        
-        nextMatch = futureMatches[0];
-        console.log("Next match selected:", nextMatch?.homeTeam.name, "vs", nextMatch?.awayTeam.name, `(${nextMatch?.competition.name})`);
-        
+        allMatches.push(...futureMatches);
+        console.log(`Football Data API: ${futureMatches.length} matches found`);
       } catch (error: any) {
-        console.log("API failed:", error.message);
+        console.log("Football Data API failed:", error.message);
+      }
+      
+      // Fetch from TheSportsDB API (FA Cup + League Cup)
+      try {
+        // Get all Arsenal events (up to 10 with premium key)
+        const arsenalResponse = await axios.get(
+          `https://www.thesportsdb.com/api/v1/json/${SPORTSDB_API_KEY}/eventsnext.php?id=${ARSENAL_TEAM_ID}`,
+          { timeout: 5000 }
+        );
         
-        // If rate limited or API unavailable, provide a demo match for development
-        if (error.response?.status === 429 || error.code === 'ECONNREFUSED' || error.code === 'TIMEOUT') {
-          console.log("Using demo match due to API limitations");
+        if (arsenalResponse.data.events) {
+          const cupMatches = arsenalResponse.data.events
+            .filter((event: any) => {
+              const isRelevantCompetition = event.idLeague === FA_CUP_LEAGUE_ID || event.idLeague === LEAGUE_CUP_ID;
+              const eventDate = new Date(`${event.dateEvent}T${event.strTime}`);
+              return isRelevantCompetition && eventDate > now;
+            })
+            .map((event: any) => ({
+              competition: { name: event.strLeague },
+              homeTeam: { name: event.strHomeTeam, id: event.idHomeTeam },
+              awayTeam: { name: event.strAwayTeam, id: event.idAwayTeam },
+              venue: event.strVenue || "Emirates Stadium",
+              utcDate: `${event.dateEvent}T${event.strTime}`,
+              source: "thesportsdb"
+            }));
           
-          // Create a realistic upcoming Arsenal match (next weekend)
-          const demoKickoff = new Date();
-          demoKickoff.setDate(demoKickoff.getDate() + 3); // 3 days from now
-          demoKickoff.setHours(15, 0, 0, 0); // 3 PM kickoff
-          
-          nextMatch = {
-            competition: { name: "Premier League" },
-            homeTeam: { name: "Arsenal", id: 57 },
-            awayTeam: { name: "Manchester City", id: 65 },
-            venue: "Emirates Stadium",
-            utcDate: demoKickoff.toISOString()
-          };
+          allMatches.push(...cupMatches);
+          console.log(`TheSportsDB API: ${cupMatches.length} FA Cup/League Cup matches found`);
         }
+      } catch (error: any) {
+        console.log("TheSportsDB API failed:", error.message);
+      }
+      
+      // Log all competitions found
+      const competitions = Array.from(new Set(allMatches.map((m: any) => m.competition.name)));
+      console.log(`Total matches from all sources: ${allMatches.length}`);
+      console.log("Competitions found:", competitions.join(", "));
+      
+      // Sort all matches by date to get the chronologically next match
+      allMatches.sort((a: any, b: any) => {
+        return new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime();
+      });
+      
+      // Log first 10 matches
+      allMatches.slice(0, 10).forEach((match: any) => {
+        console.log(`  - ${new Date(match.utcDate).toLocaleDateString()}: ${match.homeTeam.name} vs ${match.awayTeam.name} (${match.competition.name})`);
+      });
+      
+      const nextMatch = allMatches[0];
+      
+      if (nextMatch) {
+        console.log("Next match selected:", nextMatch.homeTeam.name, "vs", nextMatch.awayTeam.name, `(${nextMatch.competition.name})`);
       }
       
       if (!nextMatch) {
