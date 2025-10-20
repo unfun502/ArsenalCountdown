@@ -44,6 +44,10 @@ Preferred communication style: Simple, everyday language.
 
 **API Design**
 - RESTful endpoint: `GET /api/next-match` returns the next upcoming Arsenal match
+- RESTful endpoint: `GET /api/espn-tv-provider?date=YYYYMMDD` scrapes ESPN for specific TV provider information
+  - Used for Premier League matches < 4 days away for US viewers
+  - Extracts specific broadcaster (NBC, USA Network, or Peacock) from ESPN's schedule page
+  - Falls back to generic "NBC/PEACOCK" if data not yet available
 - Static file serving for audio assets with proper MIME types
 - Vite middleware integration in development for seamless full-stack development
 

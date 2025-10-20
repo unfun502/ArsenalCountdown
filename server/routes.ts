@@ -6,6 +6,7 @@ import { ZodError } from "zod";
 import { insertMatchSchema } from "@shared/schema";
 import path from "path";
 import express from "express";
+import * as cheerio from "cheerio";
 
 if (!process.env.FOOTBALL_DATA_API_KEY) {
   throw new Error("FOOTBALL_DATA_API_KEY is required");
@@ -184,6 +185,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(500).json({ message: "Internal server error" });
       }
+    }
+  });
+
+  // Endpoint to scrape ESPN for TV provider information
+  app.get("/api/espn-tv-provider", async (req, res) => {
+    try {
+      const { date } = req.query;
+      
+      if (!date || typeof date !== 'string') {
+        return res.status(400).json({ message: "Date parameter required (YYYYMMDD format)" });
+      }
+      
+      // Fetch ESPN schedule page
+      const espnUrl = `https://www.espn.com/soccer/schedule/_/date/${date}`;
+      console.log(`Scraping ESPN for TV provider: ${espnUrl}`);
+      
+      const response = await axios.get(espnUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        },
+        timeout: 10000
+      });
+      
+      const $ = cheerio.load(response.data);
+      let tvProvider = null;
+      
+      // Find the Premier League section
+      $('div').each((i, section) => {
+        const sectionText = $(section).text();
+        
+        // Look for English Premier League heading
+        if (sectionText.includes('English Premier League')) {
+          // Find the table in this section
+          const table = $(section).find('table').first();
+          
+          if (table.length > 0) {
+            // Find Arsenal row
+            table.find('tr').each((j, row) => {
+              const rowText = $(row).text();
+              
+              // Check if this row contains Arsenal
+              if (rowText.includes('Arsenal')) {
+                // Find the TV column (3rd column typically)
+                const cells = $(row).find('td');
+                
+                // TV info is usually in the 3rd cell (index 2)
+                if (cells.length >= 3) {
+                  const tvCell = $(cells[2]);
+                  const tvText = tvCell.text().trim();
+                  
+                  // Also check for image alt text (ESPN+ logo)
+                  const tvImg = tvCell.find('img').attr('alt');
+                  
+                  if (tvText && tvText.length > 0) {
+                    tvProvider = tvText;
+                  } else if (tvImg) {
+                    tvProvider = tvImg;
+                  }
+                }
+              }
+            });
+          }
+        }
+      });
+      
+      if (tvProvider) {
+        console.log(`Found TV provider for Arsenal: ${tvProvider}`);
+        res.json({ tvProvider });
+      } else {
+        console.log("TV provider not yet available on ESPN");
+        res.json({ tvProvider: null });
+      }
+      
+    } catch (error) {
+      console.error("Error scraping ESPN:", error);
+      res.status(500).json({ message: "Failed to scrape ESPN" });
     }
   });
 

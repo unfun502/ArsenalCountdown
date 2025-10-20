@@ -13,6 +13,7 @@ import {
   isSoundEnabled,
   initSoundState
 } from "@/assets/audio";
+import { useQuery } from "@tanstack/react-query";
 
 interface CountdownProps {
   kickoff: Date;
@@ -288,6 +289,27 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
   const [soundOn, setSoundOn] = useState(false);
   const [userCountry, setUserCountry] = useState<string>("");
   const initialAnimationRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Calculate days until match
+  const now = new Date();
+  const daysUntilMatch = Math.floor((new Date(kickoff).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  
+  // Format date for ESPN URL (YYYYMMDD)
+  const espnDate = format(new Date(kickoff), 'yyyyMMdd');
+  
+  // Fetch ESPN TV provider when conditions are met
+  const shouldFetchESPN = 
+    match.competition === "Premier League" && 
+    userCountry === "US" && 
+    daysUntilMatch < 4 &&
+    daysUntilMatch >= 0;
+  
+  const { data: espnData } = useQuery<{ tvProvider: string | null }>({
+    queryKey: ['/api/espn-tv-provider', espnDate],
+    enabled: shouldFetchESPN,
+    staleTime: 60 * 60 * 1000, // Cache for 1 hour
+    refetchInterval: false,
+  });
   
   // Initial animation that cycles through random numbers more slowly
   useEffect(() => {
@@ -1176,7 +1198,12 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                 
                 if (userCountry === 'US') {
                   if (match.competition === "Premier League") {
-                    broadcasterName = "NBC/PEACOCK";
+                    // Use ESPN data if available (match < 4 days away)
+                    if (espnData?.tvProvider) {
+                      broadcasterName = espnData.tvProvider;
+                    } else {
+                      broadcasterName = "NBC/PEACOCK";
+                    }
                   } else if (match.competition.includes("Champions League") || match.competition.includes("UEFA")) {
                     broadcasterName = "CBS/PARA+";
                   } else if (match.competition.includes("FA Cup") || match.competition.includes("League Cup") || match.competition.includes("EFL Cup")) {
