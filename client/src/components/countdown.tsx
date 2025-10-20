@@ -1054,6 +1054,63 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                   })()}
                 </div>
               </>
+            ) : match.competition.includes("Champions League") || match.competition.includes("UEFA") ? (
+              <div className="flex justify-center space-x-1 md:fixed-width-panel">
+                {(() => {
+                  const text = "CHAMPIONS";
+                  
+                  // For mobile, just render the characters normally
+                  if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                    return text.split('').map((char: string, index: number) => (
+                      <SplitFlapChar 
+                        key={`competition-${index}`} 
+                        value={char} 
+                        initialAnimation={initialLoad}
+                        playSound={playClickSound}
+                      />
+                    ));
+                  }
+                  
+                  // For desktop, ensure exactly 10 cells with centered text
+                  const chars = text.split('');
+                  const totalChars = chars.length;
+                  const emptyFlapsNeeded = 10 - totalChars;
+                  
+                  // Calculate left and right padding
+                  const leftPadding = 0;
+                  const rightPadding = emptyFlapsNeeded;
+                  
+                  return (
+                    <>
+                      {/* Left empty flaps */}
+                      {Array(leftPadding).fill(0).map((_, i) => (
+                        <div key={`champions-left-empty-${i}`} className="empty-flap">
+                          <div className="splitflap-dot left"></div>
+                          <div className="splitflap-dot right"></div>
+                        </div>
+                      ))}
+                      
+                      {/* Actual characters */}
+                      {chars.map((char: string, index: number) => (
+                        <SplitFlapChar 
+                          key={`competition-${index}`} 
+                          value={char} 
+                          initialAnimation={initialLoad}
+                          playSound={playClickSound}
+                        />
+                      ))}
+                      
+                      {/* Right empty flaps */}
+                      {Array(rightPadding).fill(0).map((_, i) => (
+                        <div key={`champions-right-empty-${i}`} className="empty-flap">
+                          <div className="splitflap-dot left"></div>
+                          <div className="splitflap-dot right"></div>
+                        </div>
+                      ))}
+                    </>
+                  );
+                })()}
+              </div>
             ) : (
               <div className="flex justify-center space-x-1 md:fixed-width-panel">
                 {(() => {
