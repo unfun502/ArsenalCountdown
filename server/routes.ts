@@ -209,7 +209,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const $ = cheerio.load(response.data);
-      let tvProvider = null;
+      let tvProvider: string | null = null;
       
       // Find the Premier League section
       $('div').each((i, section) => {
@@ -227,21 +227,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               // Check if this row contains Arsenal
               if (rowText.includes('Arsenal')) {
-                // Find the TV column (3rd column typically)
+                // Find the TV column (4th column, index 3)
                 const cells = $(row).find('td');
                 
-                // TV info is usually in the 3rd cell (index 2)
-                if (cells.length >= 3) {
-                  const tvCell = $(cells[2]);
-                  const tvText = tvCell.text().trim();
+                // TV info is in the 4th cell (index 3)
+                if (cells.length >= 4) {
+                  const tvCell = $(cells[3]);
+                  
+                  // Look for network-name div (primary network)
+                  const primaryNetwork = tvCell.find('.network-name').first();
+                  if (primaryNetwork.length > 0) {
+                    tvProvider = primaryNetwork.text().trim();
+                  } else {
+                    // Fallback to cell text
+                    const tvText = tvCell.text().trim();
+                    if (tvText && tvText.length > 0) {
+                      tvProvider = tvText;
+                    }
+                  }
                   
                   // Also check for image alt text (ESPN+ logo)
-                  const tvImg = tvCell.find('img').attr('alt');
-                  
-                  if (tvText && tvText.length > 0) {
-                    tvProvider = tvText;
-                  } else if (tvImg) {
-                    tvProvider = tvImg;
+                  if (!tvProvider) {
+                    const tvImg = tvCell.find('img').attr('alt');
+                    if (tvImg) {
+                      tvProvider = tvImg;
+                    }
                   }
                 }
               }
