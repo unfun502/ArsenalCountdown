@@ -306,6 +306,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
   
   const { data: espnData } = useQuery<{ tvProvider: string | null }>({
     queryKey: ['/api/espn-tv-provider', espnDate],
+    queryFn: () => fetch(`/api/espn-tv-provider?date=${espnDate}`).then(res => res.json()),
     enabled: shouldFetchESPN,
     staleTime: 60 * 60 * 1000, // Cache for 1 hour
     refetchInterval: false,
