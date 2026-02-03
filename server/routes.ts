@@ -211,18 +211,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const $ = cheerio.load(response.data);
       let tvProvider: string | null = null;
       
-      // Find the Premier League section
+      // Search for Arsenal matches in any relevant competition section
+      // Includes: Premier League, EFL Cup/League Cup/Carabao Cup, FA Cup
+      const relevantCompetitions = [
+        'English Premier League',
+        'EFL Cup',
+        'League Cup', 
+        'Carabao Cup',
+        'FA Cup',
+        'English FA Cup'
+      ];
+      
       $('div').each((i, section) => {
+        if (tvProvider) return; // Already found, stop searching
+        
         const sectionText = $(section).text();
         
-        // Look for English Premier League heading
-        if (sectionText.includes('English Premier League')) {
+        // Check if this section contains any relevant competition
+        const isRelevantSection = relevantCompetitions.some(comp => sectionText.includes(comp));
+        
+        if (isRelevantSection && sectionText.includes('Arsenal')) {
           // Find the table in this section
           const table = $(section).find('table').first();
           
           if (table.length > 0) {
             // Find Arsenal row
             table.find('tr').each((j, row) => {
+              if (tvProvider) return; // Already found
+              
               const rowText = $(row).text();
               
               // Check if this row contains Arsenal

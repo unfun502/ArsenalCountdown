@@ -298,8 +298,15 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
   const espnDate = format(new Date(kickoff), 'yyyyMMdd');
   
   // Fetch ESPN TV provider when conditions are met
+  // Include Premier League, EFL Cup, League Cup, and FA Cup for US viewers
+  const isESPNCompetition = 
+    match.competition === "Premier League" ||
+    match.competition.includes("EFL Cup") ||
+    match.competition.includes("League Cup") ||
+    match.competition.includes("FA Cup");
+  
   const shouldFetchESPN = 
-    match.competition === "Premier League" && 
+    isESPNCompetition && 
     userCountry === "US" && 
     daysUntilMatch < 4 &&
     daysUntilMatch >= 0;
@@ -1198,13 +1205,11 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                 let broadcasterName = "CHECK LOCAL";
                 
                 if (userCountry === 'US') {
-                  if (match.competition === "Premier League") {
-                    // Use ESPN data if available (match < 4 days away)
-                    if (espnData?.tvProvider) {
-                      broadcasterName = espnData.tvProvider;
-                    } else {
-                      broadcasterName = "NBC/PEACOCK";
-                    }
+                  // Use ESPN data if available (scraped for matches < 4 days away)
+                  if (espnData?.tvProvider) {
+                    broadcasterName = espnData.tvProvider;
+                  } else if (match.competition === "Premier League") {
+                    broadcasterName = "NBC/PEACOCK";
                   } else if (match.competition.includes("Champions League") || match.competition.includes("UEFA")) {
                     broadcasterName = "CBS/PARA+";
                   } else if (match.competition.includes("FA Cup") || match.competition.includes("League Cup") || match.competition.includes("EFL Cup")) {
