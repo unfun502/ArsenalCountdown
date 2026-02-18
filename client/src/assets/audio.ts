@@ -1,61 +1,129 @@
 /**
- * Audio handler for split-flap sound effects using an audio pool
+ * Web Audio API handler for split-flap sound effects
+ * 
+ * Two modes:
+ * 1. Rapid clicking loop during board spin animation
+ * 2. Single short click on each second tick
  */
 
 let soundEnabled = false;
+let audioContext: AudioContext | null = null;
+let clickBuffer: AudioBuffer | null = null;
+let fullBuffer: AudioBuffer | null = null;
+let spinSource: AudioBufferSourceNode | null = null;
+let isSpinning = false;
 
 const SOUND_PATH = '/sounds/splitflap-click.mp3';
-const POOL_SIZE = 5;
-let audioPool: HTMLAudioElement[] = [];
-let poolIndex = 0;
-let poolReady = false;
+const CLICK_DURATION = 0.08;
 
-const initPool = (): void => {
-  if (poolReady) return;
-  audioPool = [];
-  for (let i = 0; i < POOL_SIZE; i++) {
-    const audio = new Audio(SOUND_PATH);
-    audio.volume = 0.5;
-    audio.preload = 'auto';
-    audioPool.push(audio);
+const getContext = (): AudioContext | null => {
+  if (!audioContext) {
+    try {
+      audioContext = new AudioContext();
+    } catch {
+      return null;
+    }
   }
-  poolReady = true;
+  if (audioContext.state === 'suspended') {
+    audioContext.resume();
+  }
+  return audioContext;
+};
+
+const loadAudio = async (): Promise<void> => {
+  const ctx = getContext();
+  if (!ctx || fullBuffer) return;
+
+  try {
+    const response = await fetch(SOUND_PATH);
+    const arrayBuffer = await response.arrayBuffer();
+    fullBuffer = await ctx.decodeAudioData(arrayBuffer);
+
+    const clickSamples = Math.floor(CLICK_DURATION * fullBuffer.sampleRate);
+    clickBuffer = ctx.createBuffer(
+      fullBuffer.numberOfChannels,
+      clickSamples,
+      fullBuffer.sampleRate
+    );
+    for (let ch = 0; ch < fullBuffer.numberOfChannels; ch++) {
+      const src = fullBuffer.getChannelData(ch);
+      const dst = clickBuffer.getChannelData(ch);
+      for (let i = 0; i < clickSamples; i++) {
+        dst[i] = src[i];
+      }
+    }
+  } catch {
+    // silently fail
+  }
 };
 
 export const enableSound = (): void => {
   soundEnabled = true;
   localStorage.setItem('arsenal-countdown-sound', 'on');
-  initPool();
+  loadAudio();
 };
 
 export const disableSound = (): void => {
   soundEnabled = false;
   localStorage.setItem('arsenal-countdown-sound', 'off');
-  audioPool.forEach(a => {
-    a.pause();
-    a.currentTime = 0;
-  });
+  stopSpin();
 };
 
-export const playSound = (): void => {
-  if (!soundEnabled || !poolReady) return;
+export const playClick = (): void => {
+  if (!soundEnabled || isSpinning) return;
+  const ctx = getContext();
+  if (!ctx || !clickBuffer) return;
 
-  const audio = audioPool[poolIndex];
-  poolIndex = (poolIndex + 1) % POOL_SIZE;
-
-  audio.currentTime = 0;
-  audio.play().catch(() => {});
+  const source = ctx.createBufferSource();
+  source.buffer = clickBuffer;
+  const gain = ctx.createGain();
+  gain.gain.value = 0.6;
+  source.connect(gain);
+  gain.connect(ctx.destination);
+  source.start();
 };
 
-export const isSoundEnabled = (): boolean => {
-  return soundEnabled;
+export const startSpin = (): void => {
+  if (!soundEnabled) return;
+  const ctx = getContext();
+  if (!ctx || !fullBuffer) return;
+
+  stopSpin();
+
+  spinSource = ctx.createBufferSource();
+  spinSource.buffer = fullBuffer;
+  spinSource.loop = true;
+  spinSource.playbackRate.value = 1.2;
+  const gain = ctx.createGain();
+  gain.gain.value = 0.5;
+  spinSource.connect(gain);
+  gain.connect(ctx.destination);
+  spinSource.start();
+  isSpinning = true;
 };
+
+export const stopSpin = (): void => {
+  if (spinSource) {
+    try {
+      spinSource.stop();
+    } catch {
+      // already stopped
+    }
+    spinSource.disconnect();
+    spinSource = null;
+  }
+  isSpinning = false;
+};
+
+export const playSound = playClick;
+
+export const isSoundEnabled = (): boolean => soundEnabled;
 
 export const initSoundState = (): boolean => {
   const savedState = localStorage.getItem('arsenal-countdown-sound');
   if (savedState === 'on') {
     soundEnabled = true;
-    initPool();
+    loadAudio();
     return true;
   }
   return false;

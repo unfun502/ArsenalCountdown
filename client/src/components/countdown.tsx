@@ -9,9 +9,11 @@ import { BROADCASTERS } from "@shared/constants";
 import { 
   enableSound, 
   disableSound, 
-  playSound, 
+  playClick, 
   isSoundEnabled,
-  initSoundState
+  initSoundState,
+  startSpin,
+  stopSpin
 } from "@/assets/audio";
 import { useQuery } from "@tanstack/react-query";
 
@@ -319,12 +321,10 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
     refetchInterval: false,
   });
   
-  // Initial animation that cycles through random numbers more slowly
   useEffect(() => {
     if (initialLoad) {
-      // Initial animation plays here
+      if (soundOn) startSpin();
       
-      // Generate random digits during the initial animation
       const generateRandomDigits = () => {
         setFakeDigits({
           days: Math.floor(Math.random() * 99),
@@ -334,30 +334,24 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
         });
       };
       
-      // Start with random digits
       generateRandomDigits();
-      
-      // Update random digits more slowly (250ms) for a visible spinning effect
       const interval = setInterval(generateRandomDigits, 250);
       
-      // End the initial animation after 2 seconds
       initialAnimationRef.current = setTimeout(() => {
         clearInterval(interval);
+        stopSpin();
         setInitialLoad(false);
-        
-        // Animation ends here
       }, 2000);
       
       return () => {
         clearInterval(interval);
+        stopSpin();
         if (initialAnimationRef.current) {
           clearTimeout(initialAnimationRef.current);
         }
-        
-        // Cleanup if component unmounts
       };
     }
-  }, [initialLoad]);
+  }, [initialLoad, soundOn]);
   
   // Regular countdown logic
   useEffect(() => {
@@ -431,10 +425,9 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
       .catch(err => console.error("Failed to get user location:", err));
   }, []);
 
-  // Simple sound playback function
   const playClickSound = () => {
     if (!soundOn) return;
-    playSound();
+    playClick();
   };
     
   const toggleSound = () => {
@@ -443,7 +436,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
     
     if (newSoundState) {
       enableSound();
-      playSound();
+      playClick();
     } else {
       disableSound();
     }
