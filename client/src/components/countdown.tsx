@@ -393,13 +393,8 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
     return () => clearInterval(timer);
   }, []);
   
-  // Initialize sound state on component mount
   useEffect(() => {
-    // Check for saved preference
-    const hasSavedPreference = initSoundState();
-    if (hasSavedPreference) {
-      setSoundOn(true);
-    }
+    disableSound();
   }, []);
 
   // Fetch user location for broadcaster info
