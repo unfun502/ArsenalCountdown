@@ -1,69 +1,61 @@
 /**
- * Simple audio handler for typewriter sound effects
+ * Audio handler for split-flap sound effects using an audio pool
  */
 
-// Track if sound is enabled
 let soundEnabled = false;
 
-// Audio path
-const SOUND_PATH = '/sounds/type.mp3';
+const SOUND_PATH = '/sounds/splitflap-click.mp3';
+const POOL_SIZE = 5;
+let audioPool: HTMLAudioElement[] = [];
+let poolIndex = 0;
+let poolReady = false;
 
-/**
- * Enable sound playback
- */
+const initPool = (): void => {
+  if (poolReady) return;
+  audioPool = [];
+  for (let i = 0; i < POOL_SIZE; i++) {
+    const audio = new Audio(SOUND_PATH);
+    audio.volume = 0.5;
+    audio.preload = 'auto';
+    audioPool.push(audio);
+  }
+  poolReady = true;
+};
+
 export const enableSound = (): void => {
   soundEnabled = true;
   localStorage.setItem('arsenal-countdown-sound', 'on');
-  console.log('Sound enabled');
+  initPool();
 };
 
-/**
- * Disable sound playback
- */
 export const disableSound = (): void => {
   soundEnabled = false;
   localStorage.setItem('arsenal-countdown-sound', 'off');
-  console.log('Sound disabled');
+  audioPool.forEach(a => {
+    a.pause();
+    a.currentTime = 0;
+  });
 };
 
-/**
- * Play the typewriter sound
- */
 export const playSound = (): void => {
-  if (!soundEnabled) return;
-  
-  try {
-    // Create a new audio element each time
-    const audio = new Audio(SOUND_PATH);
-    audio.volume = 0.7;
-    
-    // Attempt to play the sound
-    audio.play()
-      .then(() => {
-        console.log('Sound played successfully');
-      })
-      .catch((err) => {
-        console.error('Error playing sound:', err);
-      });
-  } catch (err) {
-    console.error('Error creating audio:', err);
-  }
+  if (!soundEnabled || !poolReady) return;
+
+  const audio = audioPool[poolIndex];
+  poolIndex = (poolIndex + 1) % POOL_SIZE;
+
+  audio.currentTime = 0;
+  audio.play().catch(() => {});
 };
 
-/**
- * Check if sound is enabled
- */
 export const isSoundEnabled = (): boolean => {
   return soundEnabled;
 };
 
-/**
- * Initialize sound state from localStorage
- */
 export const initSoundState = (): boolean => {
   const savedState = localStorage.getItem('arsenal-countdown-sound');
   if (savedState === 'on') {
     soundEnabled = true;
+    initPool();
     return true;
   }
   return false;
