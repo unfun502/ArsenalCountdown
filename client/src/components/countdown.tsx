@@ -86,6 +86,7 @@ const SplitFlapDigit = ({
       };
     } else {
       setDisplayValue(value);
+      setIsFlipping(false);
     }
   }, [initialAnimation, value, playSound]);
   
@@ -202,6 +203,7 @@ const SplitFlapChar = ({
       };
     } else {
       setDisplayChar(value);
+      setIsFlipping(false);
     }
   }, [initialAnimation, value, playSound]);
   
