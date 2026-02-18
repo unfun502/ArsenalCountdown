@@ -785,178 +785,74 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
         <div className="splitflap-display mt-6">
           <div className="flex flex-col space-y-4">
             {(() => {
-              // Determine opponent based on whether Arsenal is home or away
+              const MAX_CHARS = 10;
               const isArsenalHome = match.homeTeam.toLowerCase().includes('arsenal');
               const opponentName = (isArsenalHome ? match.awayTeam : match.homeTeam).toUpperCase();
-              if (opponentName.length <= 12) {
+              
+              const renderLine = (text: string, keyPrefix: string) => {
+                const truncated = text.substring(0, MAX_CHARS);
+                
+                if (typeof window !== 'undefined' && window.innerWidth < 768) {
+                  return truncated.split('').map((char: string, index: number) => (
+                    <SplitFlapChar 
+                      key={`${keyPrefix}-${index}`} 
+                      value={char} 
+                      initialAnimation={initialLoad}
+                      playSound={playClickSound}
+                    />
+                  ));
+                }
+                
+                const chars = truncated.split('');
+                const rightPadding = Math.max(0, MAX_CHARS - chars.length);
+                
+                return (
+                  <>
+                    {chars.map((char: string, index: number) => (
+                      <SplitFlapChar 
+                        key={`${keyPrefix}-${index}`} 
+                        value={char} 
+                        initialAnimation={initialLoad}
+                        playSound={playClickSound}
+                      />
+                    ))}
+                    {Array(rightPadding).fill(0).map((_, i) => (
+                      <div key={`${keyPrefix}-empty-${i}`} className="empty-flap">
+                        <div className="splitflap-dot left"></div>
+                        <div className="splitflap-dot right"></div>
+                      </div>
+                    ))}
+                  </>
+                );
+              };
+              
+              if (opponentName.length <= MAX_CHARS) {
                 return (
                   <div className="flex justify-center space-x-1 md:fixed-width-panel">
-                    {(() => {
-                      // For mobile, just render the characters normally
-                      if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                        return opponentName.split('').map((char: string, index: number) => (
-                          <SplitFlapChar 
-                            key={`opponent-${index}`} 
-                            value={char} 
-                            initialAnimation={initialLoad}
-                          />
-                        ));
-                      }
-                      
-                      // For desktop, ensure exactly 10 cells with centered text
-                      const chars = opponentName.split('');
-                      const totalChars = chars.length;
-                      const emptyFlapsNeeded = 10 - totalChars;
-                      
-                      // Calculate left and right padding
-                      const leftPadding = 0;
-                      const rightPadding = Math.max(0, emptyFlapsNeeded); // All empty flaps go to the right
-                      
-                      return (
-                        <>
-                          {/* Left empty flaps */}
-                          {Array(leftPadding).fill(0).map((_, i) => (
-                            <div key={`opp-left-empty-${i}`} className="empty-flap">
-                              <div className="splitflap-dot left"></div>
-                              <div className="splitflap-dot right"></div>
-                            </div>
-                          ))}
-                          
-                          {/* Actual characters */}
-                          {chars.map((char: string, index: number) => (
-                            <SplitFlapChar 
-                              key={`opponent-${index}`} 
-                              value={char} 
-                              initialAnimation={initialLoad}
-                              playSound={playClickSound}
-                            />
-                          ))}
-                          
-                          {/* Right empty flaps */}
-                          {Array(rightPadding).fill(0).map((_, i) => (
-                            <div key={`opp-right-empty-${i}`} className="empty-flap">
-                              <div className="splitflap-dot left"></div>
-                              <div className="splitflap-dot right"></div>
-                            </div>
-                          ))}
-                        </>
-                      );
-                    })()}
+                    {renderLine(opponentName, 'opponent')}
                   </div>
                 );
               } else {
-                // Split into two lines
                 const midPoint = Math.ceil(opponentName.length / 2);
-                const firstLine = opponentName.substring(0, midPoint);
-                const secondLine = opponentName.substring(midPoint);
+                let splitAt = midPoint;
+                const spaceAfter = opponentName.indexOf(' ', midPoint);
+                const spaceBefore = opponentName.lastIndexOf(' ', midPoint);
+                if (spaceBefore > 0 && (midPoint - spaceBefore) <= 3) {
+                  splitAt = spaceBefore;
+                } else if (spaceAfter > 0 && (spaceAfter - midPoint) <= 3) {
+                  splitAt = spaceAfter;
+                }
+                
+                const firstLine = opponentName.substring(0, splitAt).trim();
+                const secondLine = opponentName.substring(splitAt).trim();
                 
                 return (
                   <>
                     <div className="flex justify-center space-x-1 md:fixed-width-panel">
-                      {(() => {
-                        // For mobile, just render the characters normally
-                        if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                          return firstLine.split('').map((char: string, index: number) => (
-                            <SplitFlapChar 
-                              key={`opponent1-${index}`} 
-                              value={char} 
-                              initialAnimation={initialLoad}
-                              playSound={playClickSound}
-                            />
-                          ));
-                        }
-                        
-                        // For desktop, ensure exactly 10 cells with centered text
-                        const chars = firstLine.split('');
-                        const totalChars = chars.length;
-                        const emptyFlapsNeeded = 10 - totalChars;
-                        
-                        // Calculate left and right padding
-                        const leftPadding = 0;
-                        const rightPadding = Math.max(0, emptyFlapsNeeded); // All empty flaps go to the right
-                        
-                        return (
-                          <>
-                            {/* Left empty flaps */}
-                            {Array(leftPadding).fill(0).map((_, i) => (
-                              <div key={`opp1-left-empty-${i}`} className="empty-flap">
-                                <div className="splitflap-dot left"></div>
-                                <div className="splitflap-dot right"></div>
-                              </div>
-                            ))}
-                            
-                            {/* Actual characters */}
-                            {chars.map((char: string, index: number) => (
-                              <SplitFlapChar 
-                                key={`opponent1-${index}`} 
-                                value={char} 
-                                initialAnimation={initialLoad}
-                              />
-                            ))}
-                            
-                            {/* Right empty flaps */}
-                            {Array(rightPadding).fill(0).map((_, i) => (
-                              <div key={`opp1-right-empty-${i}`} className="empty-flap">
-                                <div className="splitflap-dot left"></div>
-                                <div className="splitflap-dot right"></div>
-                              </div>
-                            ))}
-                          </>
-                        );
-                      })()}
+                      {renderLine(firstLine, 'opp1')}
                     </div>
                     <div className="flex justify-center space-x-1 md:fixed-width-panel">
-                      {(() => {
-                        // For mobile, just render the characters normally
-                        if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                          return secondLine.split('').map((char: string, index: number) => (
-                            <SplitFlapChar 
-                              key={`opponent2-${index}`} 
-                              value={char} 
-                              initialAnimation={initialLoad}
-                              playSound={playClickSound}
-                            />
-                          ));
-                        }
-                        
-                        // For desktop, ensure exactly 10 cells with centered text
-                        const chars = secondLine.split('');
-                        const totalChars = chars.length;
-                        const emptyFlapsNeeded = 10 - totalChars;
-                        
-                        // Calculate left and right padding
-                        const leftPadding = 0;
-                        const rightPadding = Math.max(0, emptyFlapsNeeded); // All empty flaps go to the right
-                        
-                        return (
-                          <>
-                            {/* Left empty flaps */}
-                            {Array(leftPadding).fill(0).map((_, i) => (
-                              <div key={`opp2-left-empty-${i}`} className="empty-flap">
-                                <div className="splitflap-dot left"></div>
-                                <div className="splitflap-dot right"></div>
-                              </div>
-                            ))}
-                            
-                            {/* Actual characters */}
-                            {chars.map((char: string, index: number) => (
-                              <SplitFlapChar 
-                                key={`opponent2-${index}`} 
-                                value={char} 
-                                initialAnimation={initialLoad}
-                              />
-                            ))}
-                            
-                            {/* Right empty flaps */}
-                            {Array(rightPadding).fill(0).map((_, i) => (
-                              <div key={`opp2-right-empty-${i}`} className="empty-flap">
-                                <div className="splitflap-dot left"></div>
-                                <div className="splitflap-dot right"></div>
-                              </div>
-                            ))}
-                          </>
-                        );
-                      })()}
+                      {renderLine(secondLine, 'opp2')}
                     </div>
                   </>
                 );
