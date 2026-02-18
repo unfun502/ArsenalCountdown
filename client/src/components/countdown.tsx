@@ -525,7 +525,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                 
                 // For left alignment, no left padding needed
                 const leftPadding = 0;
-                const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
+                const rightPadding = Math.max(0, emptyFlapsNeeded); // All empty flaps go to the right
                 
                 return (
                   <>
@@ -628,7 +628,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                 
                 // For left alignment, no left padding needed
                 const leftPadding = 0;
-                const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
+                const rightPadding = Math.max(0, emptyFlapsNeeded); // All empty flaps go to the right
                 
                 return (
                   <>
@@ -683,7 +683,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                 
                 // Calculate left and right padding
                 const leftPadding = 0;
-                const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
+                const rightPadding = Math.max(0, emptyFlapsNeeded); // All empty flaps go to the right
                 
                 return (
                   <>
@@ -752,7 +752,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                 
                 // Calculate left and right padding
                 const leftPadding = 0;
-                const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
+                const rightPadding = Math.max(0, emptyFlapsNeeded); // All empty flaps go to the right
                 
                 return (
                   <>
@@ -810,7 +810,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                       
                       // Calculate left and right padding
                       const leftPadding = 0;
-                      const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
+                      const rightPadding = Math.max(0, emptyFlapsNeeded); // All empty flaps go to the right
                       
                       return (
                         <>
@@ -873,7 +873,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                         
                         // Calculate left and right padding
                         const leftPadding = 0;
-                        const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
+                        const rightPadding = Math.max(0, emptyFlapsNeeded); // All empty flaps go to the right
                         
                         return (
                           <>
@@ -926,7 +926,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                         
                         // Calculate left and right padding
                         const leftPadding = 0;
-                        const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
+                        const rightPadding = Math.max(0, emptyFlapsNeeded); // All empty flaps go to the right
                         
                         return (
                           <>
@@ -994,7 +994,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                     
                     // Calculate left and right padding
                     const leftPadding = 0;
-                    const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
+                    const rightPadding = Math.max(0, emptyFlapsNeeded); // All empty flaps go to the right
                     
                     return (
                       <>
@@ -1050,7 +1050,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                     
                     // Calculate left and right padding
                     const leftPadding = 0;
-                    const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
+                    const rightPadding = Math.max(0, emptyFlapsNeeded); // All empty flaps go to the right
                     
                     return (
                       <>
@@ -1108,7 +1108,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                   
                   // Calculate left and right padding
                   const leftPadding = 0;
-                  const rightPadding = emptyFlapsNeeded;
+                  const rightPadding = Math.max(0, emptyFlapsNeeded);
                   
                   return (
                     <>
@@ -1164,7 +1164,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
                   
                   // Calculate left and right padding
                   const leftPadding = 0;
-                  const rightPadding = emptyFlapsNeeded; // All empty flaps go to the right
+                  const rightPadding = Math.max(0, emptyFlapsNeeded); // All empty flaps go to the right
                   
                   return (
                     <>
