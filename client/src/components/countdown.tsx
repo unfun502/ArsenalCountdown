@@ -90,37 +90,20 @@ const SplitFlapDigit = ({
     }
   }, [initialAnimation, value, playSound]);
   
-  // Handle value changes after initial animation
   useEffect(() => {
-    if (!initialAnimation && !isFlipping && shouldAnimate) {
-      if (displayValue !== value) {
-        setIsFlipping(true);
+    if (initialAnimation) return;
+    if (displayValue !== value) {
+      if (shouldAnimate) {
         playSound();
-        
-        // Rapidly cycle through a few random digits
-        let cycleCount = 0;
-        const maxCycles = 5; // Number of digits to cycle through
-        
-        const cycleInterval = setInterval(() => {
-          setDisplayValue(getRandomDigit());
-          cycleCount++;
-          
-          if (cycleCount >= maxCycles) {
-            clearInterval(cycleInterval);
-            setDisplayValue(value);
-            setIsFlipping(false);
-          }
-        }, 50); // Faster cycling for a quick animation
-        
-        return () => clearInterval(cycleInterval);
-      }
-    } else if (!initialAnimation && !isFlipping) {
-      // Just update the value without animation
-      if (displayValue !== value) {
+        setIsFlipping(true);
+        setDisplayValue(value);
+        const t = setTimeout(() => setIsFlipping(false), 300);
+        return () => clearTimeout(t);
+      } else {
         setDisplayValue(value);
       }
     }
-  }, [value, initialAnimation, isFlipping, shouldAnimate, displayValue, playSound]);
+  }, [value, initialAnimation, shouldAnimate, playSound]);
 
   return (
     <div className="splitflap-cell">

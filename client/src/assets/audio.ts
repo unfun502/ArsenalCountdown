@@ -83,6 +83,8 @@ export const playClick = (): void => {
   source.start();
 };
 
+let spinGain: GainNode | null = null;
+
 export const startSpin = (): void => {
   if (!soundEnabled) return;
   const ctx = getContext();
@@ -94,23 +96,31 @@ export const startSpin = (): void => {
   spinSource.buffer = fullBuffer;
   spinSource.loop = true;
   spinSource.playbackRate.value = 1.2;
-  const gain = ctx.createGain();
-  gain.gain.value = 0.5;
-  spinSource.connect(gain);
-  gain.connect(ctx.destination);
+  spinGain = ctx.createGain();
+  spinGain.gain.setValueAtTime(0, ctx.currentTime);
+  spinGain.gain.linearRampToValueAtTime(0.5, ctx.currentTime + 0.3);
+  spinSource.connect(spinGain);
+  spinGain.connect(ctx.destination);
   spinSource.start();
   isSpinning = true;
 };
 
 export const stopSpin = (): void => {
-  if (spinSource) {
-    try {
-      spinSource.stop();
-    } catch {
-      // already stopped
+  if (spinSource && spinGain) {
+    const ctx = audioContext;
+    if (ctx) {
+      spinGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.15);
+      const src = spinSource;
+      setTimeout(() => {
+        try { src.stop(); } catch {}
+        src.disconnect();
+      }, 200);
+    } else {
+      try { spinSource.stop(); } catch {}
+      spinSource.disconnect();
     }
-    spinSource.disconnect();
     spinSource = null;
+    spinGain = null;
   }
   isSpinning = false;
 };
