@@ -13,7 +13,8 @@ import {
   isSoundEnabled,
   initSoundState,
   startSpin,
-  stopSpin
+  stopSpin,
+  waitForAudio
 } from "@/assets/audio";
 import { useQuery } from "@tanstack/react-query";
 
@@ -410,22 +411,20 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
     playClick();
   };
     
-  const toggleSound = () => {
+  const toggleSound = async () => {
     const newSoundState = !soundOn;
     setSoundOn(newSoundState);
     
     if (newSoundState) {
       enableSound();
+      await waitForAudio();
       playClick();
     } else {
       disableSound();
     }
     
-    // Always trigger a full animation cycle to demonstrate the effect
-    console.log("Triggering animation demo");
     setInitialLoad(true);
     
-    // Reset all the time values to ensure a full refresh of the display
     setFakeDigits({
       days: Math.floor(Math.random() * 99),
       hours: Math.floor(Math.random() * 24),
@@ -433,9 +432,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
       seconds: Math.floor(Math.random() * 60)
     });
     
-    // Stop the animation after 2 seconds
     setTimeout(() => {
-      console.log("Animation demo complete");
       setInitialLoad(false);
     }, 2000);
   };

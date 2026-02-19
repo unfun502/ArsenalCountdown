@@ -1,7 +1,11 @@
 /**
  * Web Audio API handler for split-flap sound effects
- * iOS Safari compatible: context created + resumed + silent buffer played
- * all within the user's tap event to unlock audio.
+ * iOS Safari compatible.
+ * 
+ * Strategy:
+ * 1. Pre-fetch audio file as ArrayBuffer on page load (no gesture needed)
+ * 2. On user tap: create AudioContext, resume, play silent buffer, decode
+ * 3. Spin/click play from decoded buffers
  */
 
 let soundEnabled = false;
@@ -12,68 +16,86 @@ let spinSource: AudioBufferSourceNode | null = null;
 let spinGain: GainNode | null = null;
 let isSpinning = false;
 let audioReady = false;
+let prefetchedData: ArrayBuffer | null = null;
+let unlockPromise: Promise<void> | null = null;
 
 const SOUND_PATH = '/sounds/splitflap-click.mp3';
 const CLICK_DURATION = 0.08;
 
-const unlockAndLoad = async (): Promise<void> => {
-  if (audioReady) return;
+const prefetch = async (): Promise<void> => {
+  if (prefetchedData) return;
+  try {
+    const response = await fetch(SOUND_PATH);
+    prefetchedData = await response.arrayBuffer();
+  } catch {
+    // will retry on enable
+  }
+};
 
-  if (!audioContext) {
+prefetch();
+
+const createContext = (): AudioContext | null => {
+  if (audioContext) return audioContext;
+  try {
     const AC = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AC) return;
+    if (!AC) return null;
     audioContext = new AC();
+    return audioContext;
+  } catch {
+    return null;
+  }
+};
+
+const unlock = async (): Promise<void> => {
+  const ctx = createContext();
+  if (!ctx) return;
+
+  if (ctx.state === 'suspended') {
+    await ctx.resume();
   }
 
-  if (audioContext.state === 'suspended') {
-    await audioContext.resume();
+  const silent = ctx.createBuffer(1, 1, 22050);
+  const node = ctx.createBufferSource();
+  node.buffer = silent;
+  node.connect(ctx.destination);
+  node.start(0);
+
+  if (!prefetchedData) {
+    await prefetch();
   }
 
-  const silent = audioContext.createBuffer(1, 1, 22050);
-  const src = audioContext.createBufferSource();
-  src.buffer = silent;
-  src.connect(audioContext.destination);
-  src.start();
+  if (prefetchedData && !fullBuffer) {
+    const copy = prefetchedData.slice(0);
+    fullBuffer = await ctx.decodeAudioData(copy);
 
-  if (!fullBuffer) {
-    try {
-      const response = await fetch(SOUND_PATH);
-      const arrayBuffer = await response.arrayBuffer();
-      fullBuffer = await audioContext.decodeAudioData(arrayBuffer);
-
-      const clickSamples = Math.floor(CLICK_DURATION * fullBuffer.sampleRate);
-      clickBuffer = audioContext.createBuffer(
-        fullBuffer.numberOfChannels,
-        clickSamples,
-        fullBuffer.sampleRate
-      );
-      for (let ch = 0; ch < fullBuffer.numberOfChannels; ch++) {
-        const srcData = fullBuffer.getChannelData(ch);
-        const dst = clickBuffer.getChannelData(ch);
-        for (let i = 0; i < clickSamples; i++) {
-          dst[i] = srcData[i];
-        }
+    const clickSamples = Math.floor(CLICK_DURATION * fullBuffer.sampleRate);
+    clickBuffer = ctx.createBuffer(
+      fullBuffer.numberOfChannels,
+      clickSamples,
+      fullBuffer.sampleRate
+    );
+    for (let ch = 0; ch < fullBuffer.numberOfChannels; ch++) {
+      const srcData = fullBuffer.getChannelData(ch);
+      const dst = clickBuffer.getChannelData(ch);
+      for (let i = 0; i < clickSamples; i++) {
+        dst[i] = srcData[i];
       }
-    } catch {
-      return;
     }
   }
 
-  audioReady = true;
-};
-
-const ensureResumed = async (): Promise<boolean> => {
-  if (!audioContext) return false;
-  if (audioContext.state === 'suspended') {
-    try { await audioContext.resume(); } catch { return false; }
-  }
-  return audioContext.state === 'running';
+  audioReady = !!(fullBuffer && clickBuffer);
 };
 
 export const enableSound = (): void => {
   soundEnabled = true;
   localStorage.setItem('arsenal-countdown-sound', 'on');
-  unlockAndLoad();
+  unlockPromise = unlock();
+};
+
+export const isAudioReady = (): boolean => audioReady;
+
+export const waitForAudio = async (): Promise<void> => {
+  if (unlockPromise) await unlockPromise;
 };
 
 export const disableSound = (): void => {
@@ -85,8 +107,9 @@ export const disableSound = (): void => {
 export const playClick = (): void => {
   if (!soundEnabled || isSpinning || !audioReady) return;
   if (!audioContext || !clickBuffer) return;
-
-  ensureResumed();
+  if (audioContext.state === 'suspended') {
+    audioContext.resume();
+  }
 
   const source = audioContext.createBufferSource();
   source.buffer = clickBuffer;
@@ -94,14 +117,16 @@ export const playClick = (): void => {
   gain.gain.value = 0.6;
   source.connect(gain);
   gain.connect(audioContext.destination);
-  source.start();
+  source.start(0);
 };
 
 export const startSpin = (): void => {
   if (!soundEnabled || !audioReady) return;
   if (!audioContext || !fullBuffer) return;
+  if (audioContext.state === 'suspended') {
+    audioContext.resume();
+  }
 
-  ensureResumed();
   stopSpin();
 
   spinSource = audioContext.createBufferSource();
@@ -113,7 +138,7 @@ export const startSpin = (): void => {
   spinGain.gain.linearRampToValueAtTime(0.5, audioContext.currentTime + 0.3);
   spinSource.connect(spinGain);
   spinGain.connect(audioContext.destination);
-  spinSource.start();
+  spinSource.start(0);
   isSpinning = true;
 };
 
@@ -144,7 +169,7 @@ export const initSoundState = (): boolean => {
   const savedState = localStorage.getItem('arsenal-countdown-sound');
   if (savedState === 'on') {
     soundEnabled = true;
-    unlockAndLoad();
+    unlockPromise = unlock();
     return true;
   }
   return false;
