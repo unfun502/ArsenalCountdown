@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { atcb_action } from "add-to-calendar-button";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon, Volume2, VolumeX } from "lucide-react";
-import { BROADCASTERS } from "@shared/constants";
+import { getBroadcaster } from "@shared/constants";
 import { 
   enableSound, 
   disableSound, 
@@ -1040,33 +1040,12 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
             {/* TV Channel */}
             <div className="flex justify-center space-x-1 md:fixed-width-panel">
               {(() => {
-                // Get broadcaster based on competition and user's country
                 let broadcasterName = "CHECK LOCAL";
                 
-                if (userCountry === 'US') {
-                  // Use ESPN data if available (scraped for matches < 4 days away)
-                  if (espnData?.tvProvider) {
-                    broadcasterName = espnData.tvProvider;
-                  } else if (match.competition === "Premier League") {
-                    broadcasterName = "NBC/PEACOCK";
-                  } else if (match.competition.includes("Champions League") || match.competition.includes("UEFA")) {
-                    broadcasterName = "CBS/PARA+";
-                  } else if (match.competition.includes("FA Cup") || match.competition.includes("League Cup") || match.competition.includes("EFL Cup")) {
-                    broadcasterName = "ESPN+";
-                  }
-                } else if (userCountry === 'GB') {
-                  if (match.competition === "Premier League") {
-                    broadcasterName = "SKY/TNT";
-                  } else if (match.competition.includes("Champions League") || match.competition.includes("UEFA")) {
-                    broadcasterName = "TNT SPORTS";
-                  } else if (match.competition.includes("FA Cup")) {
-                    broadcasterName = "BBC/ITV";
-                  } else if (match.competition.includes("League Cup") || match.competition.includes("EFL Cup")) {
-                    broadcasterName = "SKY SPORTS";
-                  }
+                if (userCountry === 'US' && espnData?.tvProvider) {
+                  broadcasterName = espnData.tvProvider;
                 } else {
-                  // For other countries, use the general broadcaster mapping
-                  const broadcaster = BROADCASTERS[userCountry];
+                  const broadcaster = getBroadcaster(userCountry, match.competition);
                   broadcasterName = broadcaster?.name || "CHECK LOCAL";
                 }
                 
