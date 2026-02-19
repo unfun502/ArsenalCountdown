@@ -123,9 +123,11 @@ Preferred communication style: Simple, everyday language.
 - **Audio API**: Plays typewriter sound effects for UI interactions
 
 **Broadcasting Data**
-- Hardcoded broadcaster mappings in `shared/constants.ts` for 10 countries
-  - GB, US, CA, AU, DE, FR, ES, IT, NL, IN
-  - Each includes broadcaster name and streaming URL
+- Competition-aware broadcaster mappings in `shared/constants.ts` for 12 countries
+  - GB, US, CA, AU, DE, FR, ES, IT, NL, IN, BR, IE
+  - Each country has per-competition broadcasters (Premier League, Champions League, FA Cup, League Cup) plus a default fallback
+  - `getBroadcaster(countryCode, competitionName)` helper resolves the correct broadcaster
+  - For US viewers, ESPN scraping overrides the hardcoded data when match-specific info is available
 
 **Font & Icon Libraries**
 - **Google Fonts**: Lato (weights 300, 400, 700, 900) and JetBrains Mono (700)
