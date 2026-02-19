@@ -430,10 +430,6 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
       minutes: Math.floor(Math.random() * 60),
       seconds: Math.floor(Math.random() * 60)
     });
-    
-    setTimeout(() => {
-      setInitialLoad(false);
-    }, 2000);
   };
 
   return (
