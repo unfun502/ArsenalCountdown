@@ -30,7 +30,12 @@ Preferred communication style: Simple, everyday language.
 
 **Key Features**
 - **Split-Flap Display**: Custom countdown component with animated digit transitions mimicking vintage airport displays
-- **Sound Effects**: Optional typewriter/mechanical sounds for digit flips, initialized on user interaction to comply with browser autoplay policies
+- **Sound Effects**: Optional typewriter/mechanical sounds for digit flips. Hybrid audio approach for iOS Safari compatibility:
+  - HTML5 Audio for spin loop (started synchronously in user gesture to satisfy iOS autoplay policy)
+  - Web Audio API for per-second click sounds (initialized async after unlock)
+  - HTML5 Audio click pool as fallback if Web Audio not ready
+  - Silent Web Audio oscillator keepalive to prevent iOS from suspending audio session
+  - Sound defaults to OFF; user must toggle ON to enable
 - **Add to Calendar**: Integration with `add-to-calendar-button` library for multi-platform calendar exports
 - **Browser Notifications**: Optional match reminders with configurable timing (5 minutes to 1 day before kickoff)
 - **Geolocation-based Broadcasting Info**: Fetches user location via IP to show relevant TV broadcasters
