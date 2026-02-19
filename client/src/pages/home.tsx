@@ -117,7 +117,10 @@ export default function Home() {
         <div className="space-y-8 w-full max-w-2xl">
           <Countdown kickoff={new Date(match.kickoff)} match={match} />
           
-          <div className="text-center mt-8">
+          <div className="flex items-center justify-center gap-4 mt-8">
+            <div className="text-white/50 text-sm">
+              © {new Date().getFullYear()} Arsenal Match Countdown
+            </div>
             <Button
               onClick={() => atcb_action({
                 name: `${match.homeTeam} vs ${match.awayTeam}`,
@@ -129,17 +132,16 @@ export default function Home() {
                 options: ['Google', 'Apple', 'Microsoft365', 'Outlook.com', 'iCal'],
                 timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
               })}
-              className="bg-codepen-black border border-white/20 text-white hover:bg-white/10 mb-4"
+              variant="ghost"
+              size="sm"
+              className="text-white/50 hover:text-white hover:bg-white/10 text-sm px-2"
             >
-              <CalendarIcon className="h-4 w-4 mr-2" />
+              <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
               Add to Calendar
             </Button>
-            
-
-            
-            <div className="text-white/50 text-sm mt-4">
-              <p>© {new Date().getFullYear()} Arsenal Match Countdown</p>
-            </div>
+            <a href="https://daniel-portfolio.replit.app/" target="_blank" rel="noopener noreferrer">
+              <img src="/images/otter-logo.png" alt="Portfolio" className="h-8 w-auto opacity-50 hover:opacity-100 transition-opacity" />
+            </a>
           </div>
         </div>
       ) : null}
