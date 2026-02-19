@@ -1,176 +1,139 @@
 /**
- * Web Audio API handler for split-flap sound effects
- * iOS Safari compatible.
- * 
- * Strategy:
- * 1. Pre-fetch audio file as ArrayBuffer on page load (no gesture needed)
- * 2. On user tap: create AudioContext, resume, play silent buffer, decode
- * 3. Spin/click play from decoded buffers
+ * Hybrid audio handler for split-flap sound effects.
+ * iOS Safari compatible — all .play() calls happen synchronously
+ * within the user gesture handler, not after async awaits.
  */
 
 let soundEnabled = false;
-let audioContext: AudioContext | null = null;
-let clickBuffer: AudioBuffer | null = null;
-let fullBuffer: AudioBuffer | null = null;
-let spinSource: AudioBufferSourceNode | null = null;
-let spinGain: GainNode | null = null;
+let audioUnlocked = false;
 let isSpinning = false;
-let audioReady = false;
-let prefetchedData: ArrayBuffer | null = null;
-let unlockPromise: Promise<void> | null = null;
+
+let spinAudio: HTMLAudioElement | null = null;
+let clickPool: HTMLAudioElement[] = [];
+let clickPoolIndex = 0;
 
 const SOUND_PATH = '/sounds/splitflap-click.mp3';
-const CLICK_DURATION = 0.08;
+const POOL_SIZE = 4;
+const CLICK_DURATION_MS = 80;
 
-const prefetch = async (): Promise<void> => {
-  if (prefetchedData) return;
-  try {
-    const response = await fetch(SOUND_PATH);
-    prefetchedData = await response.arrayBuffer();
-  } catch {
-    // will retry on enable
-  }
-};
+function log(msg: string) {
+  console.log(`[audio] ${msg}`);
+}
 
-prefetch();
-
-const createContext = (): AudioContext | null => {
-  if (audioContext) return audioContext;
-  try {
-    const AC = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AC) return null;
-    audioContext = new AC();
-    return audioContext;
-  } catch {
-    return null;
-  }
-};
-
-const unlock = async (): Promise<void> => {
-  const ctx = createContext();
-  if (!ctx) return;
-
-  if (ctx.state === 'suspended') {
-    await ctx.resume();
-  }
-
-  const silent = ctx.createBuffer(1, 1, 22050);
-  const node = ctx.createBufferSource();
-  node.buffer = silent;
-  node.connect(ctx.destination);
-  node.start(0);
-
-  if (!prefetchedData) {
-    await prefetch();
-  }
-
-  if (prefetchedData && !fullBuffer) {
-    const copy = prefetchedData.slice(0);
-    fullBuffer = await ctx.decodeAudioData(copy);
-
-    const clickSamples = Math.floor(CLICK_DURATION * fullBuffer.sampleRate);
-    clickBuffer = ctx.createBuffer(
-      fullBuffer.numberOfChannels,
-      clickSamples,
-      fullBuffer.sampleRate
-    );
-    for (let ch = 0; ch < fullBuffer.numberOfChannels; ch++) {
-      const srcData = fullBuffer.getChannelData(ch);
-      const dst = clickBuffer.getChannelData(ch);
-      for (let i = 0; i < clickSamples; i++) {
-        dst[i] = srcData[i];
-      }
+function ensureElements() {
+  if (clickPool.length === 0) {
+    for (let i = 0; i < POOL_SIZE; i++) {
+      const a = new Audio(SOUND_PATH);
+      a.preload = 'auto';
+      a.volume = 0.6;
+      clickPool.push(a);
     }
   }
+  if (!spinAudio) {
+    spinAudio = new Audio(SOUND_PATH);
+    spinAudio.preload = 'auto';
+    spinAudio.loop = true;
+    spinAudio.volume = 0.5;
+    spinAudio.playbackRate = 1.2;
+  }
+}
 
-  audioReady = !!(fullBuffer && clickBuffer);
-};
-
-export const enableSound = (): void => {
+/**
+ * Must be called synchronously from a click/touch handler.
+ * Plays all audio elements (muted) to unlock them on iOS,
+ * then immediately starts the spin sound.
+ */
+export function enableAndPlay(): void {
   soundEnabled = true;
   localStorage.setItem('arsenal-countdown-sound', 'on');
-  unlockPromise = unlock();
-};
+  ensureElements();
 
-export const isAudioReady = (): boolean => audioReady;
+  log('enableAndPlay: unlocking audio elements...');
 
-export const waitForAudio = async (): Promise<void> => {
-  if (unlockPromise) await unlockPromise;
-};
+  clickPool.forEach(a => {
+    a.muted = true;
+    a.play().then(() => {
+      a.pause();
+      a.currentTime = 0;
+      a.muted = false;
+      log('click element unlocked');
+    }).catch(e => log(`click unlock err: ${e?.message}`));
+  });
 
-export const disableSound = (): void => {
+  if (spinAudio) {
+    spinAudio.muted = false;
+    spinAudio.currentTime = 0;
+    spinAudio.volume = 0.5;
+    spinAudio.play().then(() => {
+      log('spin playing');
+    }).catch(e => log(`spin play err: ${e?.message}`));
+    isSpinning = true;
+  }
+
+  audioUnlocked = true;
+}
+
+export function enableSound(): void {
+  soundEnabled = true;
+  localStorage.setItem('arsenal-countdown-sound', 'on');
+}
+
+export function disableSound(): void {
   soundEnabled = false;
   localStorage.setItem('arsenal-countdown-sound', 'off');
   stopSpin();
-};
+}
 
-export const playClick = (): void => {
-  if (!soundEnabled || isSpinning || !audioReady) return;
-  if (!audioContext || !clickBuffer) return;
-  if (audioContext.state === 'suspended') {
-    audioContext.resume();
-  }
+export function isAudioReady(): boolean {
+  return audioUnlocked;
+}
 
-  const source = audioContext.createBufferSource();
-  source.buffer = clickBuffer;
-  const gain = audioContext.createGain();
-  gain.gain.value = 0.6;
-  source.connect(gain);
-  gain.connect(audioContext.destination);
-  source.start(0);
-};
+export async function waitForAudio(): Promise<void> {
+  return;
+}
 
-export const startSpin = (): void => {
-  if (!soundEnabled || !audioReady) return;
-  if (!audioContext || !fullBuffer) return;
-  if (audioContext.state === 'suspended') {
-    audioContext.resume();
-  }
+export function playClick(): void {
+  if (!soundEnabled || isSpinning || !audioUnlocked) return;
+  if (clickPool.length === 0) return;
 
-  stopSpin();
+  const audio = clickPool[clickPoolIndex];
+  clickPoolIndex = (clickPoolIndex + 1) % clickPool.length;
+  audio.currentTime = 0;
+  audio.play().catch(() => {});
+  setTimeout(() => {
+    audio.pause();
+    audio.currentTime = 0;
+  }, CLICK_DURATION_MS);
+}
 
-  spinSource = audioContext.createBufferSource();
-  spinSource.buffer = fullBuffer;
-  spinSource.loop = true;
-  spinSource.playbackRate.value = 1.2;
-  spinGain = audioContext.createGain();
-  spinGain.gain.setValueAtTime(0, audioContext.currentTime);
-  spinGain.gain.linearRampToValueAtTime(0.5, audioContext.currentTime + 0.3);
-  spinSource.connect(spinGain);
-  spinGain.connect(audioContext.destination);
-  spinSource.start(0);
+export function startSpin(): void {
+  if (!soundEnabled || !spinAudio) return;
+  if (isSpinning) return;
+
+  spinAudio.currentTime = 0;
+  spinAudio.volume = 0.5;
+  spinAudio.play().then(() => {
+    log('spin started');
+  }).catch(e => log(`spin start err: ${e?.message}`));
   isSpinning = true;
-};
+}
 
-export const stopSpin = (): void => {
-  if (spinSource && spinGain) {
-    if (audioContext) {
-      spinGain.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.15);
-      const src = spinSource;
-      setTimeout(() => {
-        try { src.stop(); } catch {}
-        src.disconnect();
-      }, 200);
-    } else {
-      try { spinSource.stop(); } catch {}
-      spinSource.disconnect();
-    }
-    spinSource = null;
-    spinGain = null;
+export function stopSpin(): void {
+  if (spinAudio) {
+    spinAudio.pause();
+    spinAudio.currentTime = 0;
   }
   isSpinning = false;
-};
+}
 
 export const playSound = playClick;
-
 export const isSoundEnabled = (): boolean => soundEnabled;
 
-export const initSoundState = (): boolean => {
+export function initSoundState(): boolean {
   const savedState = localStorage.getItem('arsenal-countdown-sound');
   if (savedState === 'on') {
     soundEnabled = true;
-    unlockPromise = unlock();
     return true;
   }
   return false;
-};
+}

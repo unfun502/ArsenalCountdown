@@ -8,6 +8,7 @@ import { CalendarIcon, Volume2, VolumeX } from "lucide-react";
 import { getBroadcaster } from "@shared/constants";
 import { 
   enableSound, 
+  enableAndPlay,
   disableSound, 
   playClick, 
   isSoundEnabled,
@@ -411,14 +412,12 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
     playClick();
   };
     
-  const toggleSound = async () => {
+  const toggleSound = () => {
     const newSoundState = !soundOn;
     setSoundOn(newSoundState);
     
     if (newSoundState) {
-      enableSound();
-      await waitForAudio();
-      playClick();
+      enableAndPlay();
     } else {
       disableSound();
     }
