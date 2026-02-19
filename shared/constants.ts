@@ -101,6 +101,7 @@ export function getCompetitionKey(competitionName: string): CompetitionKey | nul
   const name = competitionName.toLowerCase();
   if (name.includes('premier league')) return 'premierLeague';
   if (name.includes('champions league') || name.includes('uefa champions')) return 'championsLeague';
+  if (name.includes('europa') || name.includes('conference league') || name.includes('uefa')) return 'championsLeague';
   if (name.includes('fa cup')) return 'faCup';
   if (name.includes('league cup') || name.includes('efl cup') || name.includes('carabao')) return 'leagueCup';
   return null;
