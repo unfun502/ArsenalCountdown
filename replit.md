@@ -32,7 +32,7 @@ Preferred communication style: Simple, everyday language.
 - **Split-Flap Display**: Custom countdown component with animated digit transitions mimicking vintage airport displays
 - **Sound Effects**: Real split-flap mechanical sounds. Hybrid audio approach for iOS Safari compatibility:
   - `splitflap-click.mp3` — full split-flap recording used for spin loop (HTML5 Audio, started synchronously in user gesture for iOS)
-  - `splitflap-tick.mp3` — single tick extracted from recording, used for per-second countdown clicks (Web Audio API)
+  - `splitflap-tick.mp3` — single tick extracted from spin recording via ffmpeg (boosted +20dB), used for per-second countdown clicks (Web Audio API)
   - `splitflap-click-generated.mp3` — backup synthetically generated click sound
   - `splitflap-click-alt.mp3` — alternate real recording (user's uploaded file)
   - HTML5 Audio click pool as fallback if Web Audio not ready

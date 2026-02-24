@@ -46,7 +46,6 @@ function createClickPool() {
     a.volume = 0.7;
     clickPool.push(a);
   }
-  log(`click pool created with ${POOL_SIZE} elements`);
 }
 
 function startKeepalive() {
@@ -78,16 +77,9 @@ function stopKeepalive() {
 async function initWebAudio(): Promise<void> {
   try {
     const AC = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AC) {
-      log('No AudioContext available');
-      return;
-    }
+    if (!AC) return;
     webCtx = new AC();
-    log(`AudioContext created, state=${webCtx.state}`);
-    if (webCtx.state === 'suspended') {
-      await webCtx.resume();
-      log(`AudioContext resumed, state=${webCtx.state}`);
-    }
+    if (webCtx.state === 'suspended') await webCtx.resume();
 
     const silent = webCtx.createBuffer(1, 1, 22050);
     const node = webCtx.createBufferSource();
@@ -96,22 +88,10 @@ async function initWebAudio(): Promise<void> {
     node.start(0);
 
     const response = await fetch(TICK_PATH);
-    if (!response.ok) {
-      log(`Failed to fetch tick: ${response.status}`);
-      return;
-    }
+    if (!response.ok) return;
     const arrayBuf = await response.arrayBuffer();
-    log(`Tick file fetched: ${arrayBuf.byteLength} bytes`);
     clickBuffer = await webCtx.decodeAudioData(arrayBuf);
-    const channelData = clickBuffer.getChannelData(0);
-    let maxAmp = 0;
-    for (let i = 0; i < channelData.length; i++) {
-      const abs = Math.abs(channelData[i]);
-      if (abs > maxAmp) maxAmp = abs;
-    }
-    log(`Tick decoded: duration=${clickBuffer.duration}s, channels=${clickBuffer.numberOfChannels}, sampleRate=${clickBuffer.sampleRate}, maxAmplitude=${maxAmp.toFixed(4)}`);
     webAudioReady = true;
-    log('Web Audio ready');
 
     startKeepalive();
   } catch (e: any) {
@@ -127,16 +107,13 @@ export function enableAndPlay(): void {
   createSpinAudio();
   createClickPool();
 
-  let unlockCount = 0;
   for (const a of clickPool) {
     a.muted = true;
     a.play().then(() => {
       a.pause();
       a.currentTime = 0;
       a.muted = false;
-      unlockCount++;
-      log(`pool element unlocked (${unlockCount}/${POOL_SIZE})`);
-    }).catch(e => log(`pool unlock failed: ${e?.message}`));
+    }).catch(() => {});
   }
 
   if (spinAudio) {
@@ -173,13 +150,8 @@ export async function waitForAudio(): Promise<void> {
   return;
 }
 
-let tickPlayCount = 0;
-
 export function playClick(): void {
   if (!soundEnabled || isSpinning) return;
-
-  tickPlayCount++;
-  const logEvery = tickPlayCount <= 5 || tickPlayCount % 10 === 0;
 
   if (webAudioReady && webCtx && clickBuffer) {
     if (webCtx.state === 'suspended') {
@@ -193,10 +165,7 @@ export function playClick(): void {
       source.connect(gain);
       gain.connect(webCtx.destination);
       source.start(0);
-      if (logEvery) log(`tick #${tickPlayCount} via WebAudio (ctxState=${webCtx.state})`);
-    } catch (e: any) {
-      log(`Web Audio play error: ${e?.message}`);
-    }
+    } catch {}
     return;
   }
 
@@ -204,12 +173,9 @@ export function playClick(): void {
     const audio = clickPool[clickPoolIndex];
     clickPoolIndex = (clickPoolIndex + 1) % clickPool.length;
     audio.currentTime = 0;
-    audio.play().catch(e => log(`pool play err: ${e?.message}`));
-    if (logEvery) log(`tick #${tickPlayCount} via HTML5 pool`);
+    audio.play().catch(() => {});
     return;
   }
-
-  log('no audio backend available');
 }
 
 export function startSpin(): void {
