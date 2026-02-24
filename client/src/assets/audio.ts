@@ -159,34 +159,14 @@ export async function waitForAudio(): Promise<void> {
 }
 
 export function playClick(): void {
-  log(`playClick: enabled=${soundEnabled} spinning=${isSpinning} webReady=${webAudioReady} bufferLoaded=${!!clickBuffer} ctxState=${webCtx?.state}`);
-  if (!soundEnabled || isSpinning) {
-    log(`playClick BLOCKED: enabled=${soundEnabled} spinning=${isSpinning}`);
-    return;
-  }
+  if (!soundEnabled || isSpinning) return;
 
-  if (webAudioReady && webCtx && clickBuffer) {
-    if (webCtx.state === 'suspended') webCtx.resume();
-    const source = webCtx.createBufferSource();
-    source.buffer = clickBuffer;
-    const gain = webCtx.createGain();
-    gain.gain.value = 0.6;
-    source.connect(gain);
-    gain.connect(webCtx.destination);
-    source.start(0);
-    log('playClick: Web Audio tick played');
-    return;
-  }
-
-  if (clickPool.length === 0) {
-    log('playClick: no pool, no webAudio — silent');
-    return;
-  }
-  const audio = clickPool[clickPoolIndex];
-  clickPoolIndex = (clickPoolIndex + 1) % clickPool.length;
-  audio.currentTime = 0;
-  audio.play().catch(() => {});
-  log('playClick: HTML5 fallback played');
+  // Simple direct playback - create fresh Audio each time
+  try {
+    const a = new Audio(TICK_PATH);
+    a.volume = 0.7;
+    a.play().catch(() => {});
+  } catch {}
 }
 
 export function startSpin(): void {
