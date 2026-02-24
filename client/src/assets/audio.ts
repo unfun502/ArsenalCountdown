@@ -178,10 +178,6 @@ export function playClick(): void {
   clickPoolIndex = (clickPoolIndex + 1) % clickPool.length;
   audio.currentTime = 0;
   audio.play().catch(() => {});
-  setTimeout(() => {
-    audio.pause();
-    audio.currentTime = 0;
-  }, CLICK_DURATION * 1000);
 }
 
 export function startSpin(): void {

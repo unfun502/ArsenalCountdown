@@ -1,5 +1,5 @@
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
 import { atcb_action } from "add-to-calendar-button";
@@ -35,7 +35,7 @@ const SplitFlapDigit = ({
   value, 
   initialAnimation = false,
   shouldAnimate = false,
-  playSound = () => {} // Pass the sound function as a prop
+  playSound = () => {}
 }: { 
   value: string, 
   initialAnimation?: boolean,
@@ -46,40 +46,32 @@ const SplitFlapDigit = ({
   const [isFlipping, setIsFlipping] = useState(initialAnimation);
   const animationRef = useRef<NodeJS.Timeout | null>(null);
   const spinIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const playSoundRef = useRef(playSound);
+  playSoundRef.current = playSound;
   
-  // Generate random digit
   const getRandomDigit = () => {
     return Math.floor(Math.random() * 10).toString();
   };
   
-  // Handle initial animation with spinning digits
   useEffect(() => {
     if (initialAnimation) {
       setIsFlipping(true);
+      playSoundRef.current();
       
-      // Play sound at the start of animation
-      playSound();
-      
-      // Rapidly cycle through digits during initial animation
       spinIntervalRef.current = setInterval(() => {
         setDisplayValue(getRandomDigit());
-        
-        // Occasionally play flip sound during rapid cycling
         if (Math.random() < 0.2) {
-          playSound();
+          playSoundRef.current();
         }
-      }, 100); // Update every 100ms for a visible cycling effect
+      }, 100);
       
-      // Stop the animation after 2 seconds
       animationRef.current = setTimeout(() => {
         if (spinIntervalRef.current) {
           clearInterval(spinIntervalRef.current);
         }
         setDisplayValue(value);
         setIsFlipping(false);
-        
-        // Play final click sound when settling on final value
-        playSound();
+        playSoundRef.current();
       }, 2000);
       
       return () => {
@@ -90,13 +82,13 @@ const SplitFlapDigit = ({
       setDisplayValue(value);
       setIsFlipping(false);
     }
-  }, [initialAnimation, value, playSound]);
+  }, [initialAnimation, value]);
   
   useEffect(() => {
     if (initialAnimation) return;
     if (displayValue !== value) {
       if (shouldAnimate) {
-        playSound();
+        playSoundRef.current();
         setIsFlipping(true);
         setDisplayValue(value);
         const t = setTimeout(() => setIsFlipping(false), 300);
@@ -105,7 +97,7 @@ const SplitFlapDigit = ({
         setDisplayValue(value);
       }
     }
-  }, [value, initialAnimation, shouldAnimate, playSound]);
+  }, [value, initialAnimation, shouldAnimate]);
 
   return (
     <div className="splitflap-cell">
@@ -122,7 +114,7 @@ const SplitFlapDigit = ({
 const SplitFlapChar = ({ 
   value, 
   initialAnimation = false,
-  playSound = () => {} // Pass the sound function as a prop
+  playSound = () => {}
 }: { 
   value: string, 
   initialAnimation?: boolean,
@@ -132,54 +124,42 @@ const SplitFlapChar = ({
   const [isFlipping, setIsFlipping] = useState(initialAnimation);
   const animationRef = useRef<NodeJS.Timeout | null>(null);
   const spinIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const playSoundRef = useRef(playSound);
+  playSoundRef.current = playSound;
   
-  // Generate random character based on the type of input character
   const getRandomChar = () => {
     if (/[A-Z]/.test(value)) {
-      // Random uppercase letter
       const charCode = Math.floor(Math.random() * 26) + 65;
       return String.fromCharCode(charCode);
     } else if (/[0-9]/.test(value)) {
-      // Random digit
       return Math.floor(Math.random() * 10).toString();
     } else if (value === ' ') {
-      // For spaces, return space
       return ' ';
     } else {
-      // For other special characters, return as is or pick from common ones
       const specialChars = ['-', '.', ':', '/', value];
       return specialChars[Math.floor(Math.random() * specialChars.length)];
     }
   };
   
-  // Handle initial animation with spinning characters
   useEffect(() => {
     if (initialAnimation) {
       setIsFlipping(true);
+      playSoundRef.current();
       
-      // Play sound at the start of animation
-      playSound();
-      
-      // Rapidly cycle through characters during initial animation
       spinIntervalRef.current = setInterval(() => {
         setDisplayChar(getRandomChar());
-        
-        // Occasionally play flip sound during rapid cycling (but not every frame to avoid audio overload)
-        if (Math.random() < 0.2) { // 20% chance to play sound on each cycle
-          playSound();
+        if (Math.random() < 0.2) {
+          playSoundRef.current();
         }
-      }, 100); // Update every 100ms for a visible cycling effect
+      }, 100);
       
-      // Stop the animation after 2 seconds (matching the main animation duration)
       animationRef.current = setTimeout(() => {
         if (spinIntervalRef.current) {
           clearInterval(spinIntervalRef.current);
         }
         setDisplayChar(value);
         setIsFlipping(false);
-        
-        // Play final click sound when settling on final value
-        playSound();
+        playSoundRef.current();
       }, 2000);
       
       return () => {
@@ -190,18 +170,16 @@ const SplitFlapChar = ({
       setDisplayChar(value);
       setIsFlipping(false);
     }
-  }, [initialAnimation, value, playSound]);
+  }, [initialAnimation, value]);
   
-  // Handle updates after initial animation
   useEffect(() => {
     if (!initialAnimation && !isFlipping) {
-      // If the value has changed, play a sound and update display
       if (displayChar !== value) {
-        playSound();
+        playSoundRef.current();
         setDisplayChar(value);
       }
     }
-  }, [value, initialAnimation, isFlipping, displayChar, playSound]);
+  }, [value, initialAnimation, isFlipping, displayChar]);
   
   return (
     <div className="splitflap-cell">
