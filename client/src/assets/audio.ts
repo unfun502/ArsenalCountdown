@@ -103,7 +103,13 @@ async function initWebAudio(): Promise<void> {
     const arrayBuf = await response.arrayBuffer();
     log(`Tick file fetched: ${arrayBuf.byteLength} bytes`);
     clickBuffer = await webCtx.decodeAudioData(arrayBuf);
-    log(`Tick decoded: duration=${clickBuffer.duration}s, channels=${clickBuffer.numberOfChannels}, sampleRate=${clickBuffer.sampleRate}`);
+    const channelData = clickBuffer.getChannelData(0);
+    let maxAmp = 0;
+    for (let i = 0; i < channelData.length; i++) {
+      const abs = Math.abs(channelData[i]);
+      if (abs > maxAmp) maxAmp = abs;
+    }
+    log(`Tick decoded: duration=${clickBuffer.duration}s, channels=${clickBuffer.numberOfChannels}, sampleRate=${clickBuffer.sampleRate}, maxAmplitude=${maxAmp.toFixed(4)}`);
     webAudioReady = true;
     log('Web Audio ready');
 
@@ -167,8 +173,13 @@ export async function waitForAudio(): Promise<void> {
   return;
 }
 
+let tickPlayCount = 0;
+
 export function playClick(): void {
   if (!soundEnabled || isSpinning) return;
+
+  tickPlayCount++;
+  const logEvery = tickPlayCount <= 5 || tickPlayCount % 10 === 0;
 
   if (webAudioReady && webCtx && clickBuffer) {
     if (webCtx.state === 'suspended') {
@@ -178,10 +189,11 @@ export function playClick(): void {
       const source = webCtx.createBufferSource();
       source.buffer = clickBuffer;
       const gain = webCtx.createGain();
-      gain.gain.value = 0.7;
+      gain.gain.value = 1.0;
       source.connect(gain);
       gain.connect(webCtx.destination);
       source.start(0);
+      if (logEvery) log(`tick #${tickPlayCount} via WebAudio (ctxState=${webCtx.state})`);
     } catch (e: any) {
       log(`Web Audio play error: ${e?.message}`);
     }
@@ -193,6 +205,7 @@ export function playClick(): void {
     clickPoolIndex = (clickPoolIndex + 1) % clickPool.length;
     audio.currentTime = 0;
     audio.play().catch(e => log(`pool play err: ${e?.message}`));
+    if (logEvery) log(`tick #${tickPlayCount} via HTML5 pool`);
     return;
   }
 
