@@ -378,10 +378,8 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
       .catch(err => console.error("Failed to get user location:", err));
   }, []);
 
-  const [tickCount, setTickCount] = useState(0);
   const playClickSound = () => {
     if (!soundOn) return;
-    setTickCount(c => c + 1);
     playClick();
   };
     
@@ -1084,7 +1082,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
               title={soundOn ? "Mute sound effects" : "Enable sound effects"}
             >
               {soundOn ? <Volume2 className="h-4 w-4 mr-2" /> : <VolumeX className="h-4 w-4 mr-2" />}
-              {soundOn ? `Sound On (${tickCount})` : "Sound Off"}
+              {soundOn ? "Sound On" : "Sound Off"}
             </Button>
           </div>
         </div>
