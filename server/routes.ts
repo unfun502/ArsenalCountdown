@@ -32,7 +32,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve sound files with the correct content type
   app.get('/sounds/:filename', (req, res) => {
     const filename = req.params.filename;
-    const filePath = path.join(process.cwd(), 'public', 'sounds', filename);
+    const filePath = path.join(process.cwd(), 'client', 'public', 'sounds', filename);
     
     // Set proper content type for audio files
     if (filename.endsWith('.mp3')) {
