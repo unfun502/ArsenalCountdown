@@ -1,10 +1,8 @@
 /**
  * Hybrid audio handler for split-flap sound effects.
- * iOS Safari compatible:
  * - HTML5 Audio for spin loop (started synchronously in user gesture)
- * - Web Audio API for per-second clicks (initialized async after unlock)
- * - HTML5 Audio click pool as fallback if Web Audio not ready
- * - Silent Web Audio oscillator keepalive to prevent iOS audio session suspend
+ * - Web Audio API for per-second clicks (AudioContext stays unlocked after gesture)
+ * - Pre-unlocked HTML5 Audio click pool as fallback
  */
 
 let soundEnabled = false;
@@ -25,8 +23,7 @@ let keepaliveGain: GainNode | null = null;
 
 const SPIN_PATH = '/sounds/splitflap-click.mp3';
 const TICK_PATH = '/sounds/splitflap-tick.mp3';
-const CLICK_DURATION = 0.12;
-const POOL_SIZE = 3;
+const POOL_SIZE = 4;
 
 function log(msg: string) {
   console.log(`[audio] ${msg}`);
@@ -46,9 +43,10 @@ function createClickPool() {
   for (let i = 0; i < POOL_SIZE; i++) {
     const a = new Audio(TICK_PATH);
     a.preload = 'auto';
-    a.volume = 0.6;
+    a.volume = 0.7;
     clickPool.push(a);
   }
+  log(`click pool created with ${POOL_SIZE} elements`);
 }
 
 function startKeepalive() {
@@ -60,7 +58,6 @@ function startKeepalive() {
     keepaliveOsc.connect(keepaliveGain);
     keepaliveGain.connect(webCtx.destination);
     keepaliveOsc.start(0);
-    log('silent keepalive oscillator started');
   } catch (e: any) {
     log(`keepalive err: ${e?.message}`);
   }
@@ -81,9 +78,16 @@ function stopKeepalive() {
 async function initWebAudio(): Promise<void> {
   try {
     const AC = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AC) return;
+    if (!AC) {
+      log('No AudioContext available');
+      return;
+    }
     webCtx = new AC();
-    if (webCtx.state === 'suspended') await webCtx.resume();
+    log(`AudioContext created, state=${webCtx.state}`);
+    if (webCtx.state === 'suspended') {
+      await webCtx.resume();
+      log(`AudioContext resumed, state=${webCtx.state}`);
+    }
 
     const silent = webCtx.createBuffer(1, 1, 22050);
     const node = webCtx.createBufferSource();
@@ -92,10 +96,16 @@ async function initWebAudio(): Promise<void> {
     node.start(0);
 
     const response = await fetch(TICK_PATH);
+    if (!response.ok) {
+      log(`Failed to fetch tick: ${response.status}`);
+      return;
+    }
     const arrayBuf = await response.arrayBuffer();
+    log(`Tick file fetched: ${arrayBuf.byteLength} bytes`);
     clickBuffer = await webCtx.decodeAudioData(arrayBuf);
+    log(`Tick decoded: duration=${clickBuffer.duration}s, channels=${clickBuffer.numberOfChannels}, sampleRate=${clickBuffer.sampleRate}`);
     webAudioReady = true;
-    log('Web Audio ready for clicks');
+    log('Web Audio ready');
 
     startKeepalive();
   } catch (e: any) {
@@ -104,10 +114,6 @@ async function initWebAudio(): Promise<void> {
   }
 }
 
-/**
- * Must be called synchronously from a click/touch handler.
- * Unlocks audio on iOS, starts spin sound immediately.
- */
 export function enableAndPlay(): void {
   soundEnabled = true;
   localStorage.setItem('arsenal-countdown-sound', 'on');
@@ -115,13 +121,16 @@ export function enableAndPlay(): void {
   createSpinAudio();
   createClickPool();
 
+  let unlockCount = 0;
   for (const a of clickPool) {
     a.muted = true;
     a.play().then(() => {
       a.pause();
       a.currentTime = 0;
       a.muted = false;
-    }).catch(() => {});
+      unlockCount++;
+      log(`pool element unlocked (${unlockCount}/${POOL_SIZE})`);
+    }).catch(e => log(`pool unlock failed: ${e?.message}`));
   }
 
   if (spinAudio) {
@@ -161,12 +170,33 @@ export async function waitForAudio(): Promise<void> {
 export function playClick(): void {
   if (!soundEnabled || isSpinning) return;
 
-  // Simple direct playback - create fresh Audio each time
-  try {
-    const a = new Audio(TICK_PATH);
-    a.volume = 0.7;
-    a.play().catch(() => {});
-  } catch {}
+  if (webAudioReady && webCtx && clickBuffer) {
+    if (webCtx.state === 'suspended') {
+      webCtx.resume().catch(() => {});
+    }
+    try {
+      const source = webCtx.createBufferSource();
+      source.buffer = clickBuffer;
+      const gain = webCtx.createGain();
+      gain.gain.value = 0.7;
+      source.connect(gain);
+      gain.connect(webCtx.destination);
+      source.start(0);
+    } catch (e: any) {
+      log(`Web Audio play error: ${e?.message}`);
+    }
+    return;
+  }
+
+  if (clickPool.length > 0) {
+    const audio = clickPool[clickPoolIndex];
+    clickPoolIndex = (clickPoolIndex + 1) % clickPool.length;
+    audio.currentTime = 0;
+    audio.play().catch(e => log(`pool play err: ${e?.message}`));
+    return;
+  }
+
+  log('no audio backend available');
 }
 
 export function startSpin(): void {
@@ -183,7 +213,6 @@ export function stopSpin(): void {
   if (spinAudio) {
     spinAudio.pause();
     spinAudio.currentTime = 0;
-    log('spin audio paused');
   }
   isSpinning = false;
 }
