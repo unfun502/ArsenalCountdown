@@ -48,6 +48,8 @@ const SplitFlapDigit = ({
   const spinIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const playSoundRef = useRef(playSound);
   playSoundRef.current = playSound;
+  const prevValueRef = useRef(value);
+  const wasAnimating = useRef(initialAnimation);
   
   const getRandomDigit = () => {
     return Math.floor(Math.random() * 10).toString();
@@ -55,6 +57,7 @@ const SplitFlapDigit = ({
   
   useEffect(() => {
     if (initialAnimation) {
+      wasAnimating.current = true;
       setIsFlipping(true);
       playSoundRef.current();
       
@@ -65,28 +68,22 @@ const SplitFlapDigit = ({
         }
       }, 100);
       
-      animationRef.current = setTimeout(() => {
-        if (spinIntervalRef.current) {
-          clearInterval(spinIntervalRef.current);
-        }
-        setDisplayValue(value);
-        setIsFlipping(false);
-        playSoundRef.current();
-      }, 2000);
-      
       return () => {
         if (spinIntervalRef.current) clearInterval(spinIntervalRef.current);
         if (animationRef.current) clearTimeout(animationRef.current);
       };
-    } else {
+    }
+    
+    if (wasAnimating.current) {
+      wasAnimating.current = false;
       setDisplayValue(value);
       setIsFlipping(false);
+      prevValueRef.current = value;
+      return;
     }
-  }, [initialAnimation, value]);
-  
-  useEffect(() => {
-    if (initialAnimation) return;
-    if (displayValue !== value) {
+    
+    if (prevValueRef.current !== value) {
+      prevValueRef.current = value;
       if (shouldAnimate) {
         playSoundRef.current();
         setIsFlipping(true);
@@ -126,6 +123,8 @@ const SplitFlapChar = ({
   const spinIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const playSoundRef = useRef(playSound);
   playSoundRef.current = playSound;
+  const prevValueRef = useRef(value);
+  const wasAnimating = useRef(initialAnimation);
   
   const getRandomChar = () => {
     if (/[A-Z]/.test(value)) {
@@ -143,6 +142,7 @@ const SplitFlapChar = ({
   
   useEffect(() => {
     if (initialAnimation) {
+      wasAnimating.current = true;
       setIsFlipping(true);
       playSoundRef.current();
       
@@ -153,33 +153,26 @@ const SplitFlapChar = ({
         }
       }, 100);
       
-      animationRef.current = setTimeout(() => {
-        if (spinIntervalRef.current) {
-          clearInterval(spinIntervalRef.current);
-        }
-        setDisplayChar(value);
-        setIsFlipping(false);
-        playSoundRef.current();
-      }, 2000);
-      
       return () => {
         if (spinIntervalRef.current) clearInterval(spinIntervalRef.current);
         if (animationRef.current) clearTimeout(animationRef.current);
       };
-    } else {
+    }
+    
+    if (wasAnimating.current) {
+      wasAnimating.current = false;
       setDisplayChar(value);
       setIsFlipping(false);
+      prevValueRef.current = value;
+      return;
     }
-  }, [initialAnimation, value]);
-  
-  useEffect(() => {
-    if (!initialAnimation && !isFlipping) {
-      if (displayChar !== value) {
-        playSoundRef.current();
-        setDisplayChar(value);
-      }
+    
+    if (prevValueRef.current !== value) {
+      prevValueRef.current = value;
+      playSoundRef.current();
+      setDisplayChar(value);
     }
-  }, [value, initialAnimation, isFlipping, displayChar]);
+  }, [value, initialAnimation]);
   
   return (
     <div className="splitflap-cell">

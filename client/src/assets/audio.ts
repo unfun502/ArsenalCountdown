@@ -159,7 +159,11 @@ export async function waitForAudio(): Promise<void> {
 }
 
 export function playClick(): void {
-  if (!soundEnabled || isSpinning) return;
+  log(`playClick: enabled=${soundEnabled} spinning=${isSpinning} webReady=${webAudioReady} bufferLoaded=${!!clickBuffer} ctxState=${webCtx?.state}`);
+  if (!soundEnabled || isSpinning) {
+    log(`playClick BLOCKED: enabled=${soundEnabled} spinning=${isSpinning}`);
+    return;
+  }
 
   if (webAudioReady && webCtx && clickBuffer) {
     if (webCtx.state === 'suspended') webCtx.resume();
@@ -170,14 +174,19 @@ export function playClick(): void {
     source.connect(gain);
     gain.connect(webCtx.destination);
     source.start(0);
+    log('playClick: Web Audio tick played');
     return;
   }
 
-  if (clickPool.length === 0) return;
+  if (clickPool.length === 0) {
+    log('playClick: no pool, no webAudio — silent');
+    return;
+  }
   const audio = clickPool[clickPoolIndex];
   clickPoolIndex = (clickPoolIndex + 1) % clickPool.length;
   audio.currentTime = 0;
   audio.play().catch(() => {});
+  log('playClick: HTML5 fallback played');
 }
 
 export function startSpin(): void {
