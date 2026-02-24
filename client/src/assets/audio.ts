@@ -23,8 +23,9 @@ let webAudioReady = false;
 let keepaliveOsc: OscillatorNode | null = null;
 let keepaliveGain: GainNode | null = null;
 
-const SOUND_PATH = '/sounds/splitflap-click.mp3';
-const CLICK_DURATION = 0.08;
+const SPIN_PATH = '/sounds/splitflap-click.mp3';
+const TICK_PATH = '/sounds/splitflap-tick.mp3';
+const CLICK_DURATION = 0.12;
 const POOL_SIZE = 3;
 
 function log(msg: string) {
@@ -33,17 +34,17 @@ function log(msg: string) {
 
 function createSpinAudio() {
   if (spinAudio) return;
-  spinAudio = new Audio(SOUND_PATH);
+  spinAudio = new Audio(SPIN_PATH);
   spinAudio.preload = 'auto';
   spinAudio.loop = true;
   spinAudio.volume = 0.5;
-  spinAudio.playbackRate = 1.2;
+  spinAudio.playbackRate = 1.0;
 }
 
 function createClickPool() {
   if (clickPool.length > 0) return;
   for (let i = 0; i < POOL_SIZE; i++) {
-    const a = new Audio(SOUND_PATH);
+    const a = new Audio(TICK_PATH);
     a.preload = 'auto';
     a.volume = 0.6;
     clickPool.push(a);
@@ -90,17 +91,9 @@ async function initWebAudio(): Promise<void> {
     node.connect(webCtx.destination);
     node.start(0);
 
-    const response = await fetch(SOUND_PATH);
+    const response = await fetch(TICK_PATH);
     const arrayBuf = await response.arrayBuffer();
-    const fullBuffer = await webCtx.decodeAudioData(arrayBuf);
-
-    const clickSamples = Math.floor(CLICK_DURATION * fullBuffer.sampleRate);
-    clickBuffer = webCtx.createBuffer(fullBuffer.numberOfChannels, clickSamples, fullBuffer.sampleRate);
-    for (let ch = 0; ch < fullBuffer.numberOfChannels; ch++) {
-      const src = fullBuffer.getChannelData(ch);
-      const dst = clickBuffer.getChannelData(ch);
-      for (let i = 0; i < clickSamples; i++) dst[i] = src[i];
-    }
+    clickBuffer = await webCtx.decodeAudioData(arrayBuf);
     webAudioReady = true;
     log('Web Audio ready for clicks');
 
