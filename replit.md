@@ -14,7 +14,7 @@ Preferred communication style: Simple, everyday language.
 
 **Framework & Build Tool**
 - **React 18** with TypeScript for the UI layer
-- **Vite** as the build tool and development server with HMR (Hot Module Replacement)
+- **Vite 7** as the build tool and development server with HMR (Hot Module Replacement)
 - **Wouter** for client-side routing (lightweight alternative to React Router)
 
 **UI Component Library**
