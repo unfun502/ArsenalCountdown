@@ -31,14 +31,22 @@ const NO_MATCHES_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 export async function registerRoutes(app: Express): Promise<Server> {
   // Serve sound files with the correct content type
   app.get('/sounds/:filename', (req, res) => {
-    const filename = req.params.filename;
-    const filePath = path.join(process.cwd(), 'client', 'public', 'sounds', filename);
-    
-    // Set proper content type for audio files
-    if (filename.endsWith('.mp3')) {
-      res.setHeader('Content-Type', 'audio/mpeg');
+    const filename = path.basename(req.params.filename);
+
+    // Only allow .mp3 files
+    if (!filename.endsWith('.mp3')) {
+      return res.status(400).json({ message: 'Invalid file type' });
     }
-    
+
+    const soundsDir = path.resolve(process.cwd(), 'client', 'public', 'sounds');
+    const filePath = path.join(soundsDir, filename);
+
+    // Prevent path traversal — resolved path must stay inside soundsDir
+    if (!filePath.startsWith(soundsDir)) {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    res.setHeader('Content-Type', 'audio/mpeg');
     res.sendFile(filePath);
   });
 
@@ -47,20 +55,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get cached match if available
       const cachedMatch = await storage.getNextMatch();
       if (cachedMatch) {
-        console.log("Returning cached match data");
         return res.json(cachedMatch);
       }
 
       // Check if we recently found no matches to avoid excessive API calls
       if (noMatchesCache && (Date.now() - noMatchesCache.timestamp) < NO_MATCHES_CACHE_DURATION) {
-        console.log("Using cached 'no matches' response to preserve rate limits");
-        return res.status(404).json({ 
+        return res.status(404).json({
           message: "No upcoming matches found",
           seasonStatus: "off-season"
         });
       }
-
-      console.log("Fetching new match data from APIs");
       
       const allMatches: any[] = [];
       const now = new Date();
@@ -87,9 +91,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }));
         
         allMatches.push(...futureMatches);
-        console.log(`Football Data API: ${futureMatches.length} matches found`);
       } catch (error: any) {
-        console.log("Football Data API failed:", error.message);
+        console.error("Football Data API error:", error.message);
       }
       
       // Fetch from TheSportsDB API (FA Cup + League Cup)
@@ -117,35 +120,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }));
           
           allMatches.push(...cupMatches);
-          console.log(`TheSportsDB API: ${cupMatches.length} FA Cup/League Cup matches found`);
         }
       } catch (error: any) {
-        console.log("TheSportsDB API failed:", error.message);
+        console.error("TheSportsDB API error:", error.message);
       }
-      
-      // Log all competitions found
-      const competitions = Array.from(new Set(allMatches.map((m: any) => m.competition.name)));
-      console.log(`Total matches from all sources: ${allMatches.length}`);
-      console.log("Competitions found:", competitions.join(", "));
       
       // Sort all matches by date to get the chronologically next match
       allMatches.sort((a: any, b: any) => {
         return new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime();
       });
-      
-      // Log first 10 matches
-      allMatches.slice(0, 10).forEach((match: any) => {
-        console.log(`  - ${new Date(match.utcDate).toLocaleDateString()}: ${match.homeTeam.name} vs ${match.awayTeam.name} (${match.competition.name})`);
-      });
-      
+
       const nextMatch = allMatches[0];
-      
-      if (nextMatch) {
-        console.log("Next match selected:", nextMatch.homeTeam.name, "vs", nextMatch.awayTeam.name, `(${nextMatch.competition.name})`);
-      }
-      
+
       if (!nextMatch) {
-        console.log("No upcoming matches found");
         // Cache the "no matches" result to prevent excessive API calls
         noMatchesCache = { timestamp: Date.now(), duration: NO_MATCHES_CACHE_DURATION };
         return res.status(404).json({ 
@@ -172,7 +159,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Store and return
       const match = await storage.insertMatch(validated);
-      console.log("Successfully stored and returning match data:", match.homeTeam, "vs", match.awayTeam);
       res.json(match);
     } catch (error) {
       console.error("Error in /api/next-match:", error);
@@ -197,9 +183,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Date parameter required (YYYYMMDD format)" });
       }
       
-      // Fetch ESPN schedule page
       const espnUrl = `https://www.espn.com/soccer/schedule/_/date/${date}`;
-      console.log(`Scraping ESPN for TV provider: ${espnUrl}`);
       
       const response = await axios.get(espnUrl, {
         headers: {
@@ -276,13 +260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
       
-      if (tvProvider) {
-        console.log(`Found TV provider for Arsenal: ${tvProvider}`);
-        res.json({ tvProvider });
-      } else {
-        console.log("TV provider not yet available on ESPN");
-        res.json({ tvProvider: null });
-      }
+      res.json({ tvProvider });
       
     } catch (error) {
       console.error("Error scraping ESPN:", error);
@@ -293,9 +271,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/clear-cache", async (req, res) => {
     try {
       await storage.clearCache();
-      // Also clear the no-matches cache
       noMatchesCache = null;
-      console.log("All caches cleared");
       res.json({ message: "Cache cleared successfully" });
     } catch (error) {
       console.error("Error clearing cache:", error);
