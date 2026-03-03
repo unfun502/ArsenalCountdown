@@ -27,11 +27,27 @@ const ARSENAL_SPORTSDB_ID = "133604";
 const FA_CUP_LEAGUE_ID = "4482";
 const LEAGUE_CUP_ID = "4570";
 const NO_MATCHES_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX = 30; // max requests per window per IP
 
 // Module-level cache — persists for the lifetime of a Worker instance
 let cachedMatch: MatchData | null = null;
 let noMatchesCache: { timestamp: number } | null = null;
 let matchIdCounter = 1;
+
+// Simple in-memory rate limiter (per Worker instance)
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW });
+    return false;
+  }
+  entry.count++;
+  return entry.count > RATE_LIMIT_MAX;
+}
 
 function jsonResponse(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
@@ -43,7 +59,6 @@ function jsonResponse(data: unknown, status = 200): Response {
 async function handleNextMatch(env: Env): Promise<Response> {
   // Return cached match if it's still in the future
   if (cachedMatch && new Date(cachedMatch.kickoff) > new Date()) {
-    console.log("Returning cached match data");
     return jsonResponse(cachedMatch);
   }
   cachedMatch = null;
@@ -53,14 +68,12 @@ async function handleNextMatch(env: Env): Promise<Response> {
     noMatchesCache &&
     Date.now() - noMatchesCache.timestamp < NO_MATCHES_CACHE_DURATION
   ) {
-    console.log("Using cached 'no matches' response");
     return jsonResponse(
       { message: "No upcoming matches found", seasonStatus: "off-season" },
       404
     );
   }
 
-  console.log("Fetching new match data from APIs");
   const allMatches: any[] = [];
   const now = new Date();
 
@@ -85,10 +98,9 @@ async function handleNextMatch(env: Env): Promise<Response> {
           utcDate: m.utcDate,
         }));
       allMatches.push(...futureMatches);
-      console.log(`Football Data API: ${futureMatches.length} matches found`);
     }
   } catch (e: any) {
-    console.log("Football Data API failed:", e?.message ?? e);
+    console.error("Football Data API error:", e?.message ?? e);
   }
 
   // TheSportsDB API (FA Cup + League Cup)
@@ -116,35 +128,25 @@ async function handleNextMatch(env: Env): Promise<Response> {
             utcDate: `${e.dateEvent}T${e.strTime}`,
           }));
         allMatches.push(...cupMatches);
-        console.log(
-          `TheSportsDB API: ${cupMatches.length} FA Cup/League Cup matches found`
-        );
       }
     }
   } catch (e: any) {
-    console.log("TheSportsDB API failed:", e?.message ?? e);
+    console.error("TheSportsDB API error:", e?.message ?? e);
   }
 
   allMatches.sort(
     (a, b) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime()
   );
 
-  console.log(`Total matches from all sources: ${allMatches.length}`);
-
   const nextMatch = allMatches[0];
 
   if (!nextMatch) {
-    console.log("No upcoming matches found");
     noMatchesCache = { timestamp: Date.now() };
     return jsonResponse(
       { message: "No upcoming matches found", seasonStatus: "off-season" },
       404
     );
   }
-
-  console.log(
-    `Next match: ${nextMatch.homeTeam} vs ${nextMatch.awayTeam} (${nextMatch.competition})`
-  );
 
   cachedMatch = {
     id: matchIdCounter++,
@@ -162,7 +164,6 @@ async function handleNextMatch(env: Env): Promise<Response> {
 async function handleClearCache(): Promise<Response> {
   cachedMatch = null;
   noMatchesCache = null;
-  console.log("All caches cleared");
   return jsonResponse({ message: "Cache cleared successfully" });
 }
 
@@ -177,7 +178,6 @@ async function handleEspnTvProvider(url: URL): Promise<Response> {
 
   try {
     const espnUrl = `https://www.espn.com/soccer/schedule/_/date/${date}`;
-    console.log(`Fetching ESPN for TV provider: ${espnUrl}`);
 
     const response = await fetch(espnUrl, {
       headers: {
@@ -206,10 +206,6 @@ async function handleEspnTvProvider(url: URL): Promise<Response> {
     const networkMatch = snippet.match(/network-name[^>]*>([^<]+)</);
     const tvProvider = networkMatch ? networkMatch[1].trim() : null;
 
-    if (tvProvider) {
-      console.log(`Found TV provider for Arsenal: ${tvProvider}`);
-    }
-
     return jsonResponse({ tvProvider });
   } catch (e) {
     console.error("Error fetching ESPN:", e);
@@ -220,6 +216,14 @@ async function handleEspnTvProvider(url: URL): Promise<Response> {
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+
+    // Rate limit API routes
+    if (url.pathname.startsWith("/api/")) {
+      const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+      if (isRateLimited(ip)) {
+        return jsonResponse({ message: "Too many requests" }, 429);
+      }
+    }
 
     if (url.pathname === "/api/next-match") {
       return handleNextMatch(env);
