@@ -139,7 +139,7 @@ export default function Home() {
               <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
               Add to Calendar
             </Button>
-            <a href="https://daniel-portfolio.replit.app/" target="_blank" rel="noopener noreferrer">
+            <a href="https://github.com/unfun502" target="_blank" rel="noopener noreferrer">
               <img src="/images/otter-logo.png" alt="Portfolio" className="h-8 w-auto opacity-50 hover:opacity-100 transition-opacity" />
             </a>
           </div>
