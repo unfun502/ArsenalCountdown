@@ -27,11 +27,13 @@ const ARSENAL_SPORTSDB_ID = "133604";
 const FA_CUP_LEAGUE_ID = "4482";
 const LEAGUE_CUP_ID = "4570";
 const NO_MATCHES_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+const MATCH_CACHE_TTL = 30 * 60 * 1000; // 30 minutes — refresh periodically to catch newly scheduled matches
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX = 30; // max requests per window per IP
 
 // Module-level cache — persists for the lifetime of a Worker instance
 let cachedMatch: MatchData | null = null;
+let cacheTimestamp = 0;
 let noMatchesCache: { timestamp: number } | null = null;
 let matchIdCounter = 1;
 
@@ -57,8 +59,9 @@ function jsonResponse(data: unknown, status = 200): Response {
 }
 
 async function handleNextMatch(env: Env): Promise<Response> {
-  // Return cached match if it's still in the future
-  if (cachedMatch && new Date(cachedMatch.kickoff) > new Date()) {
+  // Return cached match if it's still in the future AND cache is fresh
+  const cacheAge = Date.now() - cacheTimestamp;
+  if (cachedMatch && new Date(cachedMatch.kickoff) > new Date() && cacheAge < MATCH_CACHE_TTL) {
     return jsonResponse(cachedMatch);
   }
   cachedMatch = null;
@@ -157,12 +160,14 @@ async function handleNextMatch(env: Env): Promise<Response> {
     kickoff: nextMatch.utcDate,
     broadcasts: {},
   };
+  cacheTimestamp = Date.now();
 
   return jsonResponse(cachedMatch);
 }
 
 async function handleClearCache(): Promise<Response> {
   cachedMatch = null;
+  cacheTimestamp = 0;
   noMatchesCache = null;
   return jsonResponse({ message: "Cache cleared successfully" });
 }
