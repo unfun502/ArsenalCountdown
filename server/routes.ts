@@ -27,6 +27,8 @@ const LEAGUE_CUP_ID = "4570";
 // Cache to prevent excessive API calls when no matches are found
 let noMatchesCache: { timestamp: number; duration: number } | null = null;
 const NO_MATCHES_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+const MATCH_CACHE_TTL = 30 * 60 * 1000; // 30 minutes — refresh periodically to catch newly scheduled matches
+let lastFetchTime = 0;
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Serve sound files with the correct content type
@@ -52,10 +54,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/next-match", async (req, res) => {
     try {
-      // Get cached match if available
-      const cachedMatch = await storage.getNextMatch();
-      if (cachedMatch) {
-        return res.json(cachedMatch);
+      // Get cached match if available and cache is fresh
+      const cacheAge = Date.now() - lastFetchTime;
+      if (cacheAge < MATCH_CACHE_TTL) {
+        const cachedMatch = await storage.getNextMatch();
+        if (cachedMatch) {
+          return res.json(cachedMatch);
+        }
+      } else {
+        await storage.clearCache();
       }
 
       // Check if we recently found no matches to avoid excessive API calls
@@ -159,6 +166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Store and return
       const match = await storage.insertMatch(validated);
+      lastFetchTime = Date.now();
       res.json(match);
     } catch (error) {
       console.error("Error in /api/next-match:", error);
@@ -272,6 +280,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       await storage.clearCache();
       noMatchesCache = null;
+      lastFetchTime = 0;
       res.json({ message: "Cache cleared successfully" });
     } catch (error) {
       console.error("Error clearing cache:", error);
