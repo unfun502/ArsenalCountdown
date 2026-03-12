@@ -31,6 +31,21 @@ const MATCH_CACHE_TTL = 30 * 60 * 1000; // 30 minutes — refresh periodically t
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX = 30; // max requests per window per IP
 
+const SECURITY_HEADERS: Record<string, string> = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+  'Content-Security-Policy': [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline' fonts.googleapis.com",
+    "font-src fonts.gstatic.com",
+    "img-src 'self' cdn.devlab502.net data:",
+    "connect-src 'self' ipapi.co",
+  ].join('; '),
+};
+
 // Module-level cache — persists for the lifetime of a Worker instance
 let cachedMatch: MatchData | null = null;
 let cacheTimestamp = 0;
@@ -54,8 +69,16 @@ function isRateLimited(ip: string): boolean {
 function jsonResponse(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...SECURITY_HEADERS },
   });
+}
+
+function addSecurityHeaders(response: Response): Response {
+  const headers = new Headers(response.headers);
+  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+    headers.set(key, value);
+  }
+  return new Response(response.body, { status: response.status, headers });
 }
 
 async function handleNextMatch(env: Env): Promise<Response> {
@@ -244,6 +267,7 @@ export default {
 
     // Pass everything else (HTML, JS, CSS, sounds, images) to the static asset handler.
     // The wrangler.jsonc assets config handles SPA fallback to index.html automatically.
-    return env.ASSETS.fetch(request);
+    const response = await env.ASSETS.fetch(request);
+    return addSecurityHeaders(response);
   },
 };
