@@ -182,30 +182,23 @@ export function playClick(): void {
 
 export function startSpin(): void {
   if (!soundEnabled || !spinAudio || isSpinning) return;
+  spinAudio.currentTime = 0;
   spinAudio.volume = 0.5;
-  if (spinAudio.paused) {
-    spinAudio.currentTime = 0;
-    spinAudio.play().catch(e => log(`spin start err: ${e?.message}`));
-  }
+  spinAudio.play().catch(e => log(`spin start err: ${e?.message}`));
   isSpinning = true;
+  // Resume AudioContext while HTML5 audio session is active (iOS: context
+  // must be resumed during an active session for keepalive to hold after spin)
+  if (webCtx && webCtx.state === 'suspended') {
+    webCtx.resume().catch(() => {});
+  }
   log('spin started');
-}
-
-function isIOSDevice(): boolean {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent);
 }
 
 export function stopSpin(): void {
   log('stopSpin called');
   if (spinAudio) {
-    if (isIOSDevice() && soundEnabled) {
-      // On iOS: silence rather than pause to keep the audio session alive,
-      // which allows the HTML5 click pool to keep working between spins.
-      spinAudio.volume = 0;
-    } else {
-      spinAudio.pause();
-      spinAudio.currentTime = 0;
-    }
+    spinAudio.pause();
+    spinAudio.currentTime = 0;
   }
   isSpinning = false;
 }
