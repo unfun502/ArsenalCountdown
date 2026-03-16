@@ -156,7 +156,11 @@ export async function waitForAudio(): Promise<void> {
 }
 
 export function playClick(): void {
-  if (!soundEnabled || isSpinning) return;
+  if (!soundEnabled) return;
+  // Check actual audio state instead of isSpinning flag, which can desync when
+  // enableAndPlay() is called after the initial animation has already completed
+  // (isSpinning stays true with no stopSpin() ever called in that code path).
+  if (spinAudio && !spinAudio.paused) return;
 
   if (webAudioReady && webCtx && clickBuffer && webCtx.state === 'running') {
     try {
