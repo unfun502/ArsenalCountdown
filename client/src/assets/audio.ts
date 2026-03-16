@@ -138,7 +138,12 @@ export function enableSound(): void {
 export function disableSound(): void {
   soundEnabled = false;
   localStorage.setItem('arsenal-countdown-sound', 'off');
-  stopSpin();
+  // Force full stop regardless of iOS session-keepalive logic
+  if (spinAudio) {
+    spinAudio.pause();
+    spinAudio.currentTime = 0;
+  }
+  isSpinning = false;
   stopKeepalive();
 }
 
@@ -177,18 +182,30 @@ export function playClick(): void {
 
 export function startSpin(): void {
   if (!soundEnabled || !spinAudio || isSpinning) return;
-  spinAudio.currentTime = 0;
   spinAudio.volume = 0.5;
-  spinAudio.play().catch(e => log(`spin start err: ${e?.message}`));
+  if (spinAudio.paused) {
+    spinAudio.currentTime = 0;
+    spinAudio.play().catch(e => log(`spin start err: ${e?.message}`));
+  }
   isSpinning = true;
   log('spin started');
+}
+
+function isIOSDevice(): boolean {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent);
 }
 
 export function stopSpin(): void {
   log('stopSpin called');
   if (spinAudio) {
-    spinAudio.pause();
-    spinAudio.currentTime = 0;
+    if (isIOSDevice() && soundEnabled) {
+      // On iOS: silence rather than pause to keep the audio session alive,
+      // which allows the HTML5 click pool to keep working between spins.
+      spinAudio.volume = 0;
+    } else {
+      spinAudio.pause();
+      spinAudio.currentTime = 0;
+    }
   }
   isSpinning = false;
 }
