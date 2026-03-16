@@ -370,6 +370,14 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
     disableSound();
   }, []);
 
+  // Periodic re-spin every 15 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setInitialLoad(true);
+    }, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
   // Fetch user location for broadcaster info
   useEffect(() => {
     fetch("https://ipapi.co/json/")

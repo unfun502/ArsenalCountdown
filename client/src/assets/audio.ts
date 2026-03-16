@@ -153,10 +153,7 @@ export async function waitForAudio(): Promise<void> {
 export function playClick(): void {
   if (!soundEnabled || isSpinning) return;
 
-  if (webAudioReady && webCtx && clickBuffer) {
-    if (webCtx.state === 'suspended') {
-      webCtx.resume().catch(() => {});
-    }
+  if (webAudioReady && webCtx && clickBuffer && webCtx.state === 'running') {
     try {
       const source = webCtx.createBufferSource();
       source.buffer = clickBuffer;
@@ -165,16 +162,16 @@ export function playClick(): void {
       source.connect(gain);
       gain.connect(webCtx.destination);
       source.start(0);
+      return;
     } catch {}
-    return;
   }
 
+  // Fallback: HTML5 Audio pool (handles iOS when AudioContext is suspended)
   if (clickPool.length > 0) {
     const audio = clickPool[clickPoolIndex];
     clickPoolIndex = (clickPoolIndex + 1) % clickPool.length;
     audio.currentTime = 0;
     audio.play().catch(() => {});
-    return;
   }
 }
 
