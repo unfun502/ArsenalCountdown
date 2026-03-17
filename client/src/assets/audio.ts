@@ -160,8 +160,9 @@ export function enableSound(): void {
 export function disableSound(): void {
   soundEnabled = false;
   localStorage.setItem('arsenal-countdown-sound', 'off');
-  // Force full stop regardless of iOS session-keepalive logic
+  // Fully stop everything — user explicitly wants silence
   if (spinAudio) {
+    spinAudio.muted = false;
     spinAudio.pause();
     spinAudio.currentTime = 0;
   }
@@ -182,7 +183,8 @@ export function playClick(): void {
   // Check actual audio state instead of isSpinning flag, which can desync when
   // enableAndPlay() is called after the initial animation has already completed
   // (isSpinning stays true with no stopSpin() ever called in that code path).
-  if (spinAudio && !spinAudio.paused) return;
+  // Only suppress ticks when spin is audibly playing (not in muted keepalive mode)
+  if (spinAudio && !spinAudio.paused && !spinAudio.muted) return;
 
   log(`playClick: webAudioReady=${webAudioReady} ctx=${webCtx?.state ?? 'null'} buf=${!!clickBuffer} pool=${clickPool.length}`);
 
@@ -223,10 +225,12 @@ export function startSpin(): void {
   if (!soundEnabled || !spinAudio || isSpinning) return;
   spinAudio.currentTime = 0;
   spinAudio.volume = 0.5;
-  spinAudio.play().catch(e => log(`spin start err: ${e?.message}`));
+  spinAudio.muted = false; // unmute (may have been in keepalive mode)
+  if (spinAudio.paused) {
+    spinAudio.play().catch(e => log(`spin start err: ${e?.message}`));
+  }
   isSpinning = true;
-  // Resume AudioContext while HTML5 audio session is active (iOS: context
-  // must be resumed during an active session for keepalive to hold after spin)
+  // Resume AudioContext while HTML5 audio session is active
   if (webCtx && webCtx.state === 'suspended') {
     webCtx.resume().catch(() => {});
   }
@@ -235,15 +239,17 @@ export function startSpin(): void {
 
 export function stopSpin(): void {
   log('stopSpin called');
-  // Resume AudioContext BEFORE pausing spin audio so the iOS audio session is
-  // still active when resume() is called. After spinAudio.pause() the session
-  // expires, making resume() a no-op on iOS.
+  // Resume AudioContext while spin audio is still active (iOS session alive)
   if (webCtx && webCtx.state === 'suspended') {
     webCtx.resume().catch(() => {});
   }
   if (spinAudio) {
-    spinAudio.pause();
-    spinAudio.currentTime = 0;
+    // MUTE instead of pause: iOS releases the audio session when all HTML5
+    // elements are paused, which suspends the AudioContext and kills Web Audio
+    // ticks. Keeping the element playing-but-muted holds the session open.
+    // iOS respects .muted (unlike .volume which is hardware-only).
+    spinAudio.muted = true;
+    // Don't pause — the looping muted element IS the session keepalive.
   }
   isSpinning = false;
 }
