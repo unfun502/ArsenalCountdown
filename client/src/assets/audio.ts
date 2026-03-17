@@ -124,6 +124,10 @@ export function enableAndPlay(): void {
       log('spin playing');
     }).catch(e => log(`spin play err: ${e?.message}`));
     isSpinning = true;
+    // Guarantee spin stops after the 2s animation window even when sound is
+    // enabled after initialLoad is already false (the animation useEffect's
+    // stopSpin() never runs in that code path, leaving the loop playing forever).
+    setTimeout(() => stopSpin(), 2000);
   }
 
   audioUnlocked = true;
