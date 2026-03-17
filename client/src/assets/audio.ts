@@ -53,7 +53,7 @@ function startKeepalive() {
   try {
     keepaliveOsc = webCtx.createOscillator();
     keepaliveGain = webCtx.createGain();
-    keepaliveGain.gain.value = 0;
+    keepaliveGain.gain.value = 0.0001; // Non-zero: prevents Chrome auto-suspend of "silent" graph
     keepaliveOsc.connect(keepaliveGain);
     keepaliveGain.connect(webCtx.destination);
     keepaliveOsc.start(0);
@@ -166,6 +166,8 @@ export function playClick(): void {
   // (isSpinning stays true with no stopSpin() ever called in that code path).
   if (spinAudio && !spinAudio.paused) return;
 
+  log(`playClick: webAudioReady=${webAudioReady} ctx=${webCtx?.state ?? 'null'} buf=${!!clickBuffer} pool=${clickPool.length}`);
+
   if (webAudioReady && webCtx && clickBuffer && webCtx.state === 'running') {
     try {
       const source = webCtx.createBufferSource();
@@ -175,8 +177,11 @@ export function playClick(): void {
       source.connect(gain);
       gain.connect(webCtx.destination);
       source.start(0);
+      log('playClick: web audio OK');
       return;
-    } catch {}
+    } catch (e: any) {
+      log(`playClick: web audio err: ${e?.message}`);
+    }
   }
 
   // Fallback: HTML5 Audio pool (handles iOS when AudioContext is suspended)
@@ -184,7 +189,15 @@ export function playClick(): void {
     const audio = clickPool[clickPoolIndex];
     clickPoolIndex = (clickPoolIndex + 1) % clickPool.length;
     audio.currentTime = 0;
-    audio.play().catch(() => {});
+    audio.play().then(() => {
+      log('playClick: html5 pool OK');
+      // Session now active — try to resume AudioContext for future calls
+      if (webCtx && webCtx.state === 'suspended') {
+        webCtx.resume().catch(() => {});
+      }
+    }).catch((e: any) => log(`playClick: pool err: ${e?.message}`));
+  } else {
+    log('playClick: no pool, no audio!');
   }
 }
 
@@ -204,6 +217,12 @@ export function startSpin(): void {
 
 export function stopSpin(): void {
   log('stopSpin called');
+  // Resume AudioContext BEFORE pausing spin audio so the iOS audio session is
+  // still active when resume() is called. After spinAudio.pause() the session
+  // expires, making resume() a no-op on iOS.
+  if (webCtx && webCtx.state === 'suspended') {
+    webCtx.resume().catch(() => {});
+  }
   if (spinAudio) {
     spinAudio.pause();
     spinAudio.currentTime = 0;
