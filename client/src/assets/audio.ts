@@ -78,7 +78,10 @@ async function initWebAudio(): Promise<void> {
   try {
     const AC = window.AudioContext || (window as any).webkitAudioContext;
     if (!AC) return;
-    webCtx = new AC();
+    // Create context only if not already created synchronously in enableAndPlay()
+    if (!webCtx) {
+      webCtx = new AC();
+    }
     if (webCtx.state === 'suspended') await webCtx.resume();
 
     const silent = webCtx.createBuffer(1, 1, 22050);
@@ -103,6 +106,21 @@ async function initWebAudio(): Promise<void> {
 export function enableAndPlay(): void {
   soundEnabled = true;
   localStorage.setItem('arsenal-countdown-sound', 'on');
+
+  // Create and resume AudioContext synchronously here, while we are inside the
+  // user-gesture call stack. iOS only grants AudioContext.resume() permission
+  // when called synchronously within a gesture — async calls (e.g. inside
+  // initWebAudio's await chain) arrive after the gesture window closes and fail
+  // silently, leaving the context suspended and killing ticks after the spin.
+  if (!webCtx) {
+    const AC = window.AudioContext || (window as any).webkitAudioContext;
+    if (AC) {
+      webCtx = new AC();
+      webCtx.resume().catch(() => {}); // synchronous gesture → iOS grants this
+    }
+  } else if (webCtx.state === 'suspended') {
+    webCtx.resume().catch(() => {});
+  }
 
   createSpinAudio();
   createClickPool();
