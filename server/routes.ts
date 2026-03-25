@@ -114,7 +114,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const cupMatches = arsenalResponse.data.events
             .filter((event: any) => {
               const isRelevantCompetition = event.idLeague === FA_CUP_LEAGUE_ID || event.idLeague === LEAGUE_CUP_ID;
-              const eventDate = new Date(`${event.dateEvent}T${event.strTime}`);
+              const eventDate = new Date(`${event.dateEvent}T${event.strTime}Z`);
               return isRelevantCompetition && eventDate > now;
             })
             .map((event: any) => ({
@@ -122,7 +122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               homeTeam: { name: event.strHomeTeam, id: event.idHomeTeam },
               awayTeam: { name: event.strAwayTeam, id: event.idAwayTeam },
               venue: event.strVenue || "Emirates Stadium",
-              utcDate: `${event.dateEvent}T${event.strTime}`,
+              utcDate: `${event.dateEvent}T${event.strTime}Z`,
               source: "thesportsdb"
             }));
           

@@ -143,7 +143,7 @@ async function handleNextMatch(env: Env): Promise<Response> {
             const isRelevant =
               e.idLeague === FA_CUP_LEAGUE_ID ||
               e.idLeague === LEAGUE_CUP_ID;
-            const eventDate = new Date(`${e.dateEvent}T${e.strTime}`);
+            const eventDate = new Date(`${e.dateEvent}T${e.strTime}Z`);
             return isRelevant && eventDate > now;
           })
           .map((e: any) => ({
@@ -151,7 +151,7 @@ async function handleNextMatch(env: Env): Promise<Response> {
             homeTeam: e.strHomeTeam,
             awayTeam: e.strAwayTeam,
             venue: e.strVenue || "Emirates Stadium",
-            utcDate: `${e.dateEvent}T${e.strTime}`,
+            utcDate: `${e.dateEvent}T${e.strTime}Z`,
           }));
         allMatches.push(...cupMatches);
       }
