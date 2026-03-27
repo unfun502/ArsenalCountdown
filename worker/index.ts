@@ -10,6 +10,7 @@ interface Env {
   ASSETS: Fetcher;
   FOOTBALL_DATA_API_KEY: string;
   SPORTSDB_API_KEY: string;
+  CACHE_SECRET: string;
 }
 
 interface MatchData {
@@ -258,6 +259,10 @@ export default {
     }
 
     if (url.pathname === "/api/clear-cache" && request.method === "POST") {
+      const authHeader = request.headers.get("Authorization");
+      if (!env.CACHE_SECRET || authHeader !== `Bearer ${env.CACHE_SECRET}`) {
+        return jsonResponse({ message: "Unauthorized" }, 401);
+      }
       return handleClearCache();
     }
 
