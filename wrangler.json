@@ -8,9 +8,13 @@
   ],
   "assets": {
     "directory": "./dist/public",
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    "binding": "ASSETS"
   },
   "observability": {
     "enabled": true
+  },
+  "vars": {
+    "UMAMI_SITE_ID": "9bb843ef-7392-42fc-849c-ec809efa6c0c"
   }
 }
