@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import themePlugin from "@replit/vite-plugin-shadcn-theme-json";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 import path, { dirname } from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 import { fileURLToPath } from "url";
@@ -13,6 +14,11 @@ export default defineConfig({
     react(),
     runtimeErrorOverlay(),
     themePlugin(),
+    sentryVitePlugin({
+      org: "devlab502",
+      project: "devlab502-workers",
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+    }),
   ],
   resolve: {
     alias: {
@@ -25,6 +31,7 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, "dist/public"),
     emptyOutDir: true,
+    sourcemap: "hidden",
     rollupOptions: {
       output: {
         manualChunks: {

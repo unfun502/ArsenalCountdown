@@ -37,6 +37,7 @@
   },
   "devDependencies": {
     "@replit/vite-plugin-runtime-error-modal": "^0.0.3",
+    "@sentry/vite-plugin": "^5.1.1",
     "@tailwindcss/typography": "^0.5.15",
     "@types/express": "4.17.21",
     "@types/node": "^25.3.0",
