@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { atcb_action } from "add-to-calendar-button";
+import { track } from "@/lib/track";
 
 export default function Home() {
   const { toast } = useToast();
@@ -122,7 +123,7 @@ export default function Home() {
               © {new Date().getFullYear()} Arsenal Match Countdown
             </div>
             <Button
-              onClick={() => atcb_action({
+              onClick={() => { track("add_to_calendar", { match: `${match.homeTeam} vs ${match.awayTeam}` }); atcb_action({
                 name: `${match.homeTeam} vs ${match.awayTeam}`,
                 description: `${match.competition} match at ${match.venue}`,
                 startDate: format(new Date(match.kickoff), 'yyyy-MM-dd'),
@@ -131,7 +132,7 @@ export default function Home() {
                 location: match.venue,
                 options: ['Google', 'Apple', 'Microsoft365', 'Outlook.com', 'iCal'],
                 timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-              })}
+              }); }}
               variant="ghost"
               size="sm"
               className="text-white/50 hover:text-white hover:bg-white/10 text-sm px-2"
