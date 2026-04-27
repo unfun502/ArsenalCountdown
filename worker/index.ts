@@ -8,10 +8,13 @@ interface Fetcher {
 
 interface Env {
   ASSETS: Fetcher;
-  FOOTBALL_DATA_API_KEY: string;
-  SPORTSDB_API_KEY: string;
   UMAMI_SITE_ID: string;
 }
+
+// Build-time injected via esbuild --define (see scripts/build-worker.mjs).
+// Source: GitHub Environment 'production' secrets (CI) or process.env (local dev).
+declare const FOOTBALL_PROXY_SECRET: string;
+declare const SPORTSDB_API_KEY: string;
 
 interface MatchData {
   id: number;
@@ -27,6 +30,7 @@ const ARSENAL_FOOTBALL_DATA_ID = "57";
 const ARSENAL_SPORTSDB_ID = "133604";
 const FA_CUP_LEAGUE_ID = "4482";
 const LEAGUE_CUP_ID = "4570";
+const FOOTBALL_PROXY_URL = "https://api.devlab502.net/football-proxy";
 const NO_MATCHES_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 const MATCH_CACHE_TTL = 30 * 60 * 1000; // 30 minutes — refresh periodically to catch newly scheduled matches
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
@@ -118,13 +122,15 @@ async function handleNextMatch(env: Env): Promise<Response> {
   const allMatches: any[] = [];
   const now = new Date();
 
-  // Football Data API (Premier League + Champions League)
+  // Football Data API via VPS proxy (Premier League + Champions League).
+  // Direct calls to football-data.org time out from Cloudflare datacenter IPs;
+  // the proxy at api.devlab502.net relays through a residential VPS IP.
   try {
     const response = await fetch(
-      `https://api.football-data.org/v4/teams/${ARSENAL_FOOTBALL_DATA_ID}/matches?status=SCHEDULED&limit=50`,
+      `${FOOTBALL_PROXY_URL}/teams/${ARSENAL_FOOTBALL_DATA_ID}/matches?status=TIMED,SCHEDULED&limit=50`,
       {
-        headers: { "X-Auth-Token": env.FOOTBALL_DATA_API_KEY },
-        signal: AbortSignal.timeout(5000),
+        headers: { "x-proxy-key": FOOTBALL_PROXY_SECRET },
+        signal: AbortSignal.timeout(10000),
       }
     );
     if (response.ok) {
@@ -139,16 +145,18 @@ async function handleNextMatch(env: Env): Promise<Response> {
           utcDate: m.utcDate,
         }));
       allMatches.push(...futureMatches);
+    } else {
+      console.error("Football proxy non-OK response:", response.status);
     }
   } catch (e: any) {
-    console.error("Football Data API error:", e?.message ?? e);
+    console.error("Football proxy error:", e?.message ?? e);
   }
 
-  // TheSportsDB API (FA Cup + League Cup)
+  // TheSportsDB API (FA Cup + League Cup — not covered by football-data.org free tier).
   try {
     const response = await fetch(
-      `https://www.thesportsdb.com/api/v1/json/${env.SPORTSDB_API_KEY}/eventsnext.php?id=${ARSENAL_SPORTSDB_ID}`,
-      { signal: AbortSignal.timeout(5000) }
+      `https://www.thesportsdb.com/api/v1/json/${SPORTSDB_API_KEY}/eventsnext.php?id=${ARSENAL_SPORTSDB_ID}`,
+      { signal: AbortSignal.timeout(8000) }
     );
     if (response.ok) {
       const data: any = await response.json();
@@ -158,7 +166,7 @@ async function handleNextMatch(env: Env): Promise<Response> {
             const isRelevant =
               e.idLeague === FA_CUP_LEAGUE_ID ||
               e.idLeague === LEAGUE_CUP_ID;
-            const eventDate = new Date(`${e.dateEvent}T${e.strTime}Z`);
+            const eventDate = new Date(`${e.dateEvent}T${e.strTime || "00:00:00"}Z`);
             return isRelevant && eventDate > now;
           })
           .map((e: any) => ({
@@ -166,10 +174,12 @@ async function handleNextMatch(env: Env): Promise<Response> {
             homeTeam: e.strHomeTeam,
             awayTeam: e.strAwayTeam,
             venue: e.strVenue || "Emirates Stadium",
-            utcDate: `${e.dateEvent}T${e.strTime}Z`,
+            utcDate: `${e.dateEvent}T${e.strTime || "00:00:00"}Z`,
           }));
         allMatches.push(...cupMatches);
       }
+    } else {
+      console.error("TheSportsDB API non-OK response:", response.status);
     }
   } catch (e: any) {
     console.error("TheSportsDB API error:", e?.message ?? e);
@@ -208,6 +218,71 @@ async function handleClearCache(): Promise<Response> {
   cacheTimestamp = 0;
   noMatchesCache = null;
   return jsonResponse({ message: "Cache cleared successfully" });
+}
+
+async function handleDebug(env: Env): Promise<Response> {
+  const result: Record<string, any> = {
+    hasProxySecret: !!FOOTBALL_PROXY_SECRET,
+    hasSportsDbKey: !!SPORTSDB_API_KEY,
+    proxyResult: null,
+    sportsDbResult: null,
+  };
+
+  try {
+    const r = await fetch(
+      `${FOOTBALL_PROXY_URL}/teams/${ARSENAL_FOOTBALL_DATA_ID}/matches?status=TIMED,SCHEDULED&limit=3`,
+      {
+        headers: { "x-proxy-key": FOOTBALL_PROXY_SECRET },
+        signal: AbortSignal.timeout(10000),
+      }
+    );
+    result.proxyStatus = r.status;
+    if (r.ok) {
+      const data: any = await r.json();
+      result.proxyResult = {
+        matchCount: (data.matches || []).length,
+        first: data.matches?.[0] ? {
+          utcDate: data.matches[0].utcDate,
+          status: data.matches[0].status,
+          competition: data.matches[0].competition?.name,
+          home: data.matches[0].homeTeam?.name,
+          away: data.matches[0].awayTeam?.name,
+        } : null,
+      };
+    } else {
+      result.proxyResult = { error: await r.text() };
+    }
+  } catch (e: any) {
+    result.proxyResult = { error: e?.message ?? String(e) };
+  }
+
+  try {
+    const r = await fetch(
+      `https://www.thesportsdb.com/api/v1/json/${SPORTSDB_API_KEY}/eventsnext.php?id=${ARSENAL_SPORTSDB_ID}`,
+      { signal: AbortSignal.timeout(8000) }
+    );
+    result.sportsDbStatus = r.status;
+    if (r.ok) {
+      const data: any = await r.json();
+      result.sportsDbResult = {
+        eventCount: (data.events || []).length,
+        events: (data.events || []).map((e: any) => ({
+          strLeague: e.strLeague,
+          idLeague: e.idLeague,
+          dateEvent: e.dateEvent,
+          strTime: e.strTime,
+          home: e.strHomeTeam,
+          away: e.strAwayTeam,
+        })),
+      };
+    } else {
+      result.sportsDbResult = { error: await r.text() };
+    }
+  } catch (e: any) {
+    result.sportsDbResult = { error: e?.message ?? String(e) };
+  }
+
+  return jsonResponse(result);
 }
 
 async function handleEspnTvProvider(url: URL): Promise<Response> {
@@ -278,6 +353,10 @@ export default {
 
     if (url.pathname === "/api/espn-tv-provider") {
       return handleEspnTvProvider(url);
+    }
+
+    if (url.pathname === "/api/debug" && request.method === "GET") {
+      return handleDebug(env);
     }
 
     // Pass everything else (HTML, JS, CSS, sounds, images) to the static asset handler.

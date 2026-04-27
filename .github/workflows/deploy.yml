@@ -26,6 +26,8 @@ jobs:
         run: npm run build
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          FOOTBALL_PROXY_SECRET: ${{ secrets.FOOTBALL_PROXY_SECRET }}
+          SPORTSDB_API_KEY: ${{ secrets.SPORTSDB_API_KEY }}
 
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
