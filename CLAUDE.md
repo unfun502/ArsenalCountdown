@@ -13,31 +13,47 @@ Displays an animated split-flap countdown timer to the next Arsenal FC match. Fe
 countdown.devlab502.net
 
 ## External Dependencies
-- **Football-Data.org API** — Premier League + Champions League schedules (Arsenal team ID: 57)
-- **TheSportsDB API** — FA Cup + League Cup schedules (Arsenal team ID: 133604)
+- **Football-Data.org API (via VPS proxy)** — Premier League + Champions League schedules (Arsenal team ID: 57).
+  Direct calls time out from Cloudflare Workers (datacenter IP blocked). Routed through `https://api.devlab502.net/football-proxy/` on the RackNerd VPS, authenticated with `FOOTBALL_PROXY_SECRET`.
+- **TheSportsDB API** — FA Cup + League Cup schedules (Arsenal team ID: 133604). Free key `123`.
 - **ipapi.co** — IP geolocation for broadcaster detection (no key needed)
-- **ESPN scraping** — US-specific TV provider info for Premier League matches
+- **ESPN scraping** — US-specific TV provider info for FA Cup matches only
 
 ## Build & Deploy
 - Dev: `npm run dev` (starts Express + Vite HMR on port 5000)
-- Build: `npm run build` (Vite → dist/public, esbuild → dist/worker.js)
+- Build: `npm run build` (Vite → dist/public, then `node scripts/build-worker.mjs` → dist/worker.js)
 - Output: `dist/` (dist/public for static assets, dist/worker.js for Worker)
 - Deploys to Cloudflare Workers via GitHub Actions on push to main
 
 ## Environment Variables
-- `FOOTBALL_DATA_API_KEY` — Football-Data.org API key (free tier, 10 req/min)
-- `SPORTSDB_API_KEY` — TheSportsDB API key (free or premium)
-- `DATABASE_URL` — PostgreSQL connection string (Neon serverless; currently unused at runtime)
-- `CLOUDFLARE_API_TOKEN` — GitHub Actions secret for wrangler deploy
 
-### Wrangler Secrets
-The Worker reads `FOOTBALL_DATA_API_KEY` and `SPORTSDB_API_KEY` from its `Env` interface.
-Set these via the Cloudflare dashboard (Workers > arsenalcountdown > Settings > Variables)
-or via CLI:
-```
-npx wrangler secret put FOOTBALL_DATA_API_KEY
-npx wrangler secret put SPORTSDB_API_KEY
-```
+Arsenal Countdown follows the standard devlab502 pattern: build-time injection from a GitHub Environment, no Cloudflare-runtime secrets.
+
+### Worker secrets (build-time injected via esbuild --define)
+- `FOOTBALL_PROXY_SECRET` — `x-proxy-key` shared with the VPS football-proxy. Source: GitHub `production` environment secret. The build script (`scripts/build-worker.mjs`) reads from `process.env` and bakes the literal value into `dist/worker.js`. Worker code references `FOOTBALL_PROXY_SECRET` as a module-level constant (declared via `declare const`).
+- `SPORTSDB_API_KEY` — TheSportsDB API key (free `123` key or premium). Same injection mechanism.
+
+Local dev: set both in your shell before running `npm run build` (or in `.env` if you wire up dotenv).
+
+### GitHub Actions secrets (production environment)
+- `CLOUDFLARE_API_TOKEN` — wrangler deploy auth
+- `SENTRY_AUTH_TOKEN` — Sentry sourcemap upload
+- `FOOTBALL_PROXY_SECRET` — passed to build via env, baked into Worker bundle
+- `SPORTSDB_API_KEY` — same
+
+### VPS-only (not in Worker, not in GH)
+- `FOOTBALL_DATA_API_KEY` — Football-Data.org API key (free tier, 10 req/min). Set in `~/feedback/.env` on VPS only — used by the football-proxy server.
+
+### Bitwarden backups
+- `Cloudflare API Token` (in `devlab502/Infrastructure`)
+- `Sentry — devlab502 (auth + DSN)` (in `devlab502/Infrastructure`)
+- `Arsenal Countdown — Worker runtime secrets` (in `devlab502/Per-App`) — username = SPORTSDB_API_KEY, password = FOOTBALL_PROXY_SECRET
+
+### VPS Proxy (football-proxy)
+Service runs at `~/feedback/football-proxy/index.js` in the Docker Compose stack on port 3012.
+Caddy routes `/football-proxy/*` → `football-proxy:3012`.
+Env vars `FOOTBALL_DATA_API_KEY` and `FOOTBALL_PROXY_SECRET` set in `~/feedback/.env`.
+To restart: `cd ~/feedback && docker compose restart football-proxy`
 
 ## Database Needs
 - **Current:** In-memory cache in both Express server and Cloudflare Worker. Drizzle ORM schema defined (`matches` table) but not wired up at runtime.
