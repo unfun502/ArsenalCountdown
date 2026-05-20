@@ -17,11 +17,11 @@ export const BROADCASTERS: Record<string, CompetitionBroadcasters> = {
     leagueCup: { name: 'Sky Sports', url: 'https://www.sky.com/watch/sports' },
   },
   'US': {
-    default: { name: 'NBC / Peacock', url: 'https://www.peacocktv.com/sports/soccer/premier-league' },
-    premierLeague: { name: 'NBC / Peacock / USA Network', url: 'https://www.peacocktv.com/sports/soccer/premier-league' },
-    championsLeague: { name: 'Paramount+', url: 'https://www.paramountplus.com' },
-    faCup: { name: 'ESPN / ESPN+', url: 'https://www.espn.com/soccer/' },
-    leagueCup: { name: 'Paramount+', url: 'https://www.paramountplus.com' },
+    default: { name: 'NBC/PCOCK', url: 'https://www.peacocktv.com/sports/soccer/premier-league' },
+    premierLeague: { name: 'NBC/PCOCK', url: 'https://www.peacocktv.com/sports/soccer/premier-league' },
+    championsLeague: { name: 'PARAMOUNT+', url: 'https://www.paramountplus.com' },
+    faCup: { name: 'ESPN+', url: 'https://www.espn.com/soccer/' },
+    leagueCup: { name: 'PARAMOUNT+', url: 'https://www.paramountplus.com' },
   },
   'CA': {
     default: { name: 'FuboTV', url: 'https://www.fubo.tv/welcome/channels' },

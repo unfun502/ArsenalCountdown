@@ -258,11 +258,8 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
   const espnDate = format(new Date(kickoff), 'yyyyMMdd');
   
   // Fetch ESPN TV provider when conditions are met
-  // Include Premier League, EFL Cup, League Cup, and FA Cup for US viewers
-  const isESPNCompetition = 
-    match.competition === "Premier League" ||
-    match.competition.includes("EFL Cup") ||
-    match.competition.includes("League Cup") ||
+  // ESPN/ESPN+ carries FA Cup in the US; Premier League is on NBC/Peacock, not ESPN
+  const isESPNCompetition =
     match.competition.includes("FA Cup");
   
   const shouldFetchESPN = 
@@ -1012,27 +1009,23 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
             <div className="flex justify-center space-x-1 md:fixed-width-panel">
               {(() => {
                 let broadcasterName = "CHECK LOCAL";
-                
+
                 if (userCountry === 'US' && espnData?.tvProvider) {
                   broadcasterName = espnData.tvProvider;
                 } else {
                   const broadcaster = getBroadcaster(userCountry, match.competition);
                   broadcasterName = broadcaster?.name || "CHECK LOCAL";
                 }
-                
-                let text = broadcasterName.toUpperCase();
-                
-                // Limit text to 10 characters for desktop display
-                if (typeof window !== 'undefined' && window.innerWidth >= 768 && text.length > 10) {
-                  text = text.substring(0, 10);
-                }
-                
+
+                // Limit to 10 characters on all screen sizes to fit the display
+                let text = broadcasterName.toUpperCase().substring(0, 10);
+
                 // For mobile, just render the characters normally
                 if (typeof window !== 'undefined' && window.innerWidth < 768) {
                   return text.split('').map((char: string, index: number) => (
-                    <SplitFlapChar 
-                      key={`channel-${index}`} 
-                      value={char} 
+                    <SplitFlapChar
+                      key={`channel-${index}`}
+                      value={char}
                       initialAnimation={initialLoad}
                     />
                   ));
