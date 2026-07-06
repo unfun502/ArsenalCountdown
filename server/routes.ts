@@ -21,14 +21,137 @@ const SPORTSDB_API_KEY = process.env.SPORTSDB_API_KEY;
 
 // TheSportsDB constants
 const ARSENAL_TEAM_ID = "133604";
-const FA_CUP_LEAGUE_ID = "4482";
-const LEAGUE_CUP_ID = "4570";
 
 // Cache to prevent excessive API calls when no matches are found
-let noMatchesCache: { timestamp: number; duration: number } | null = null;
+let noMatchesCache: { timestamp: number; degraded: boolean } | null = null;
 const NO_MATCHES_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 const MATCH_CACHE_TTL = 30 * 60 * 1000; // 30 minutes — refresh periodically to catch newly scheduled matches
+// When a source failed we may be showing the wrong "next" match — retry much sooner.
+const DEGRADED_MATCH_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const DEGRADED_NO_MATCHES_CACHE_DURATION = 60 * 1000; // 1 minute
+const FIXTURES_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+// Arsenal never plays twice within 24h — a SportsDB event that close to a
+// football-data match is the same fixture reported by both sources.
+const SPORTSDB_DEDUPE_WINDOW = 24 * 60 * 60 * 1000;
 let lastFetchTime = 0;
+let lastFetchDegraded = false;
+let lastFetchExtras: { timeTbc: boolean; sources: SourceHealth } | null = null;
+let fixturesCache: { data: unknown; timestamp: number; degraded: boolean } | null = null;
+
+interface SourceHealth {
+  footballData: { status: "ok" | "error"; matches: number };
+  sportsDb: { status: "ok" | "error"; matches: number };
+}
+
+interface UpcomingMatch {
+  competition: string;
+  homeTeam: string;
+  awayTeam: string;
+  venue: string;
+  utcDate: string; // ISO date string
+  timeTbc: boolean; // kickoff time not yet confirmed (date-only fixture)
+  source: "football-data" | "thesportsdb";
+}
+
+interface FetchResult {
+  matches: UpcomingMatch[];
+  sources: SourceHealth;
+  degraded: boolean;
+}
+
+// The APIs often omit the venue; guessing "Emirates Stadium" is wrong for
+// away fixtures, so fall back based on who's at home.
+function fallbackVenue(homeTeam: string): string {
+  return homeTeam.includes("Arsenal") ? "Emirates Stadium" : `${homeTeam} (Away)`;
+}
+
+// Mirrors fetchAllMatches in worker/index.ts — keep the two in sync.
+async function fetchAllMatches(): Promise<FetchResult> {
+  const now = new Date();
+  const todayUtc = now.toISOString().slice(0, 10);
+  const sources: SourceHealth = {
+    footballData: { status: "error", matches: 0 },
+    sportsDb: { status: "error", matches: 0 },
+  };
+
+  // Football Data API (Premier League + Champions League) — direct call;
+  // local machine IPs aren't blocked the way Cloudflare datacenter IPs are.
+  const fdMatches: UpcomingMatch[] = [];
+  try {
+    const response = await axios.get(
+      "https://api.football-data.org/v4/teams/57/matches?status=TIMED,SCHEDULED&limit=50",
+      {
+        headers: { "X-Auth-Token": FOOTBALL_DATA_API_KEY },
+        timeout: 5000,
+      }
+    );
+    for (const m of response.data.matches || []) {
+      if (new Date(m.utcDate) <= now) continue;
+      fdMatches.push({
+        competition: m.competition.name,
+        homeTeam: m.homeTeam.name,
+        awayTeam: m.awayTeam.name,
+        venue: m.venue || fallbackVenue(m.homeTeam.name),
+        utcDate: m.utcDate,
+        timeTbc: false,
+        source: "football-data",
+      });
+    }
+    sources.footballData = { status: "ok", matches: fdMatches.length };
+  } catch (error: any) {
+    console.error("Football Data API error:", error.message);
+  }
+
+  // TheSportsDB API — all competitions, so cups, Europa/Conference League,
+  // Community Shield, and friendlies are covered. Fixtures football-data
+  // already returned (PL/CL) are deduped by kickoff proximity, which also
+  // makes SportsDB a full fallback when football-data is down.
+  const sdMatches: UpcomingMatch[] = [];
+  try {
+    const response = await axios.get(
+      `https://www.thesportsdb.com/api/v1/json/${SPORTSDB_API_KEY}/eventsnext.php?id=${ARSENAL_TEAM_ID}`,
+      { timeout: 5000 }
+    );
+    const fdKickoffs = fdMatches.map((m) => new Date(m.utcDate).getTime());
+    for (const e of response.data.events || []) {
+      if (!e.dateEvent) continue;
+      // TheSportsDB reports null/"00:00:00" when kickoff isn't confirmed;
+      // give those a provisional midday slot so a same-day fixture neither
+      // vanishes at midnight UTC nor counts down to 00:00.
+      const hasTime = e.strTime && e.strTime !== "00:00:00";
+      const timeTbc = !hasTime;
+      const utcDate = hasTime
+        ? `${e.dateEvent}T${e.strTime}Z`
+        : `${e.dateEvent}T12:00:00Z`;
+      const isUpcoming = timeTbc
+        ? e.dateEvent >= todayUtc
+        : new Date(utcDate) > now;
+      if (!isUpcoming) continue;
+      const kickoffMs = new Date(utcDate).getTime();
+      if (fdKickoffs.some((k) => Math.abs(k - kickoffMs) < SPORTSDB_DEDUPE_WINDOW)) continue;
+      sdMatches.push({
+        competition: e.strLeague,
+        homeTeam: e.strHomeTeam,
+        awayTeam: e.strAwayTeam,
+        venue: e.strVenue || fallbackVenue(e.strHomeTeam),
+        utcDate,
+        timeTbc,
+        source: "thesportsdb",
+      });
+    }
+    sources.sportsDb = { status: "ok", matches: sdMatches.length };
+  } catch (error: any) {
+    console.error("TheSportsDB API error:", error.message);
+  }
+
+  const matches = [...fdMatches, ...sdMatches].sort(
+    (a, b) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime()
+  );
+  const degraded =
+    sources.footballData.status !== "ok" || sources.sportsDb.status !== "ok";
+
+  return { matches, sources, degraded };
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Serve sound files with the correct content type
@@ -54,109 +177,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/next-match", async (req, res) => {
     try {
-      // Get cached match if available and cache is fresh
+      // Get cached match if available and cache is fresh. A degraded fetch
+      // (a source was down) gets a much shorter TTL — the cached "next" match
+      // may be wrong if the missing source had an earlier one.
       const cacheAge = Date.now() - lastFetchTime;
-      if (cacheAge < MATCH_CACHE_TTL) {
+      const matchTtl = lastFetchDegraded ? DEGRADED_MATCH_CACHE_TTL : MATCH_CACHE_TTL;
+      if (cacheAge < matchTtl) {
         const cachedMatch = await storage.getNextMatch();
         if (cachedMatch) {
-          return res.json(cachedMatch);
+          return res.json({ ...cachedMatch, ...lastFetchExtras });
         }
       } else {
         await storage.clearCache();
       }
 
       // Check if we recently found no matches to avoid excessive API calls
-      if (noMatchesCache && (Date.now() - noMatchesCache.timestamp) < NO_MATCHES_CACHE_DURATION) {
-        return res.status(404).json({
-          message: "No upcoming matches found",
-          seasonStatus: "off-season"
-        });
-      }
-      
-      const allMatches: any[] = [];
-      const now = new Date();
-      
-      // Fetch from Football Data API (Premier League + Champions League)
-      try {
-        const response = await axios.get(
-          "https://api.football-data.org/v4/teams/57/matches?status=SCHEDULED&limit=50",
-          {
-            headers: { "X-Auth-Token": FOOTBALL_DATA_API_KEY },
-            timeout: 5000
-          }
-        );
-        
-        const futureMatches = response.data.matches
-          .filter((match: any) => new Date(match.utcDate) > now)
-          .map((match: any) => ({
-            competition: { name: match.competition.name },
-            homeTeam: { name: match.homeTeam.name, id: match.homeTeam.id },
-            awayTeam: { name: match.awayTeam.name, id: match.awayTeam.id },
-            venue: match.venue || "Emirates Stadium",
-            utcDate: match.utcDate,
-            source: "football-data"
-          }));
-        
-        allMatches.push(...futureMatches);
-      } catch (error: any) {
-        console.error("Football Data API error:", error.message);
-      }
-      
-      // Fetch from TheSportsDB API (FA Cup + League Cup)
-      try {
-        // Get all Arsenal events (up to 10 with premium key)
-        const arsenalResponse = await axios.get(
-          `https://www.thesportsdb.com/api/v1/json/${SPORTSDB_API_KEY}/eventsnext.php?id=${ARSENAL_TEAM_ID}`,
-          { timeout: 5000 }
-        );
-        
-        if (arsenalResponse.data.events) {
-          const cupMatches = arsenalResponse.data.events
-            .filter((event: any) => {
-              const isRelevantCompetition = event.idLeague === FA_CUP_LEAGUE_ID || event.idLeague === LEAGUE_CUP_ID;
-              const eventDate = new Date(`${event.dateEvent}T${event.strTime}Z`);
-              return isRelevantCompetition && eventDate > now;
-            })
-            .map((event: any) => ({
-              competition: { name: event.strLeague },
-              homeTeam: { name: event.strHomeTeam, id: event.idHomeTeam },
-              awayTeam: { name: event.strAwayTeam, id: event.idAwayTeam },
-              venue: event.strVenue || "Emirates Stadium",
-              utcDate: `${event.dateEvent}T${event.strTime}Z`,
-              source: "thesportsdb"
-            }));
-          
-          allMatches.push(...cupMatches);
+      if (noMatchesCache) {
+        const ttl = noMatchesCache.degraded
+          ? DEGRADED_NO_MATCHES_CACHE_DURATION
+          : NO_MATCHES_CACHE_DURATION;
+        if (Date.now() - noMatchesCache.timestamp < ttl) {
+          return res.status(404).json({
+            message: "No upcoming matches found",
+            seasonStatus: noMatchesCache.degraded ? "unknown" : "off-season"
+          });
         }
-      } catch (error: any) {
-        console.error("TheSportsDB API error:", error.message);
       }
-      
-      // Sort all matches by date to get the chronologically next match
-      allMatches.sort((a: any, b: any) => {
-        return new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime();
-      });
 
-      const nextMatch = allMatches[0];
+      const { matches, sources, degraded } = await fetchAllMatches();
+      const nextMatch = matches[0];
 
       if (!nextMatch) {
-        // Cache the "no matches" result to prevent excessive API calls
-        noMatchesCache = { timestamp: Date.now(), duration: NO_MATCHES_CACHE_DURATION };
-        return res.status(404).json({ 
+        noMatchesCache = { timestamp: Date.now(), degraded };
+        // Only claim off-season when both sources answered — an empty result
+        // during an outage should render as an error, not "Season Complete".
+        return res.status(404).json({
           message: "No upcoming matches found",
-          seasonStatus: "off-season"
+          seasonStatus: degraded ? "unknown" : "off-season",
+          sources
         });
       }
+      noMatchesCache = null;
 
       // Clear any old cache first
       await storage.clearCache();
 
       // Transform to our schema
       const matchData = {
-        competition: nextMatch.competition.name,
-        homeTeam: nextMatch.homeTeam.name,
-        awayTeam: nextMatch.awayTeam.name,
-        venue: nextMatch.venue || "Emirates Stadium",
+        competition: nextMatch.competition,
+        homeTeam: nextMatch.homeTeam,
+        awayTeam: nextMatch.awayTeam,
+        venue: nextMatch.venue,
         kickoff: new Date(nextMatch.utcDate),
         broadcasts: {}
       };
@@ -167,7 +238,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Store and return
       const match = await storage.insertMatch(validated);
       lastFetchTime = Date.now();
-      res.json(match);
+      lastFetchDegraded = degraded;
+      lastFetchExtras = { timeTbc: nextMatch.timeTbc, sources };
+      res.json({ ...match, ...lastFetchExtras });
     } catch (error) {
       console.error("Error in /api/next-match:", error);
       if (error instanceof ZodError) {
@@ -179,6 +252,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         res.status(500).json({ message: "Internal server error" });
       }
+    }
+  });
+
+  // Full upcoming fixture list plus per-source health — consumed by the weekly
+  // schedule-verification routine, not by the app UI. Mirrors worker/index.ts.
+  app.get("/api/fixtures", async (req, res) => {
+    try {
+      if (fixturesCache) {
+        const ttl = fixturesCache.degraded
+          ? DEGRADED_NO_MATCHES_CACHE_DURATION
+          : FIXTURES_CACHE_TTL;
+        if (Date.now() - fixturesCache.timestamp < ttl) {
+          return res.json(fixturesCache.data);
+        }
+      }
+
+      const { matches, sources, degraded } = await fetchAllMatches();
+      const payload = {
+        fetchedAt: new Date().toISOString(),
+        degraded,
+        sources,
+        matchCount: matches.length,
+        matches,
+      };
+      fixturesCache = { data: payload, timestamp: Date.now(), degraded };
+      res.json(payload);
+    } catch (error) {
+      console.error("Error in /api/fixtures:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
   });
 
@@ -281,6 +383,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.clearCache();
       noMatchesCache = null;
       lastFetchTime = 0;
+      lastFetchDegraded = false;
+      lastFetchExtras = null;
+      fixturesCache = null;
       res.json({ message: "Cache cleared successfully" });
     } catch (error) {
       console.error("Error clearing cache:", error);

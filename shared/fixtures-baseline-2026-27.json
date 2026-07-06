@@ -1,0 +1,237 @@
+{
+  "season": "2026-27",
+  "competition": "Premier League",
+  "note": "Released fixture list. Dates/times are provisional and shift for TV scheduling; opponent-by-order does not. Used by the weekly schedule-verification routine as a cross-check, not displayed in the app.",
+  "generatedAt": "2026-07-02T22:30:25.612Z",
+  "source": "football-data.org via /api/fixtures",
+  "fixtures": [
+    {
+      "matchweekOrder": 1,
+      "homeTeam": "Arsenal FC",
+      "awayTeam": "Coventry City FC",
+      "provisionalKickoffUtc": "2026-08-21T19:00:00Z"
+    },
+    {
+      "matchweekOrder": 2,
+      "homeTeam": "Aston Villa FC",
+      "awayTeam": "Arsenal FC",
+      "provisionalKickoffUtc": "2026-08-29T14:00:00Z"
+    },
+    {
+      "matchweekOrder": 3,
+      "homeTeam": "Arsenal FC",
+      "awayTeam": "Chelsea FC",
+      "provisionalKickoffUtc": "2026-09-05T14:00:00Z"
+    },
+    {
+      "matchweekOrder": 4,
+      "homeTeam": "Sunderland AFC",
+      "awayTeam": "Arsenal FC",
+      "provisionalKickoffUtc": "2026-09-12T14:00:00Z"
+    },
+    {
+      "matchweekOrder": 5,
+      "homeTeam": "Brighton & Hove Albion FC",
+      "awayTeam": "Arsenal FC",
+      "provisionalKickoffUtc": "2026-09-19T14:00:00Z"
+    },
+    {
+      "matchweekOrder": 6,
+      "homeTeam": "Arsenal FC",
+      "awayTeam": "Leeds United FC",
+      "provisionalKickoffUtc": "2026-10-10T14:00:00Z"
+    },
+    {
+      "matchweekOrder": 7,
+      "homeTeam": "Nottingham Forest FC",
+      "awayTeam": "Arsenal FC",
+      "provisionalKickoffUtc": "2026-10-17T14:00:00Z"
+    },
+    {
+      "matchweekOrder": 8,
+      "homeTeam": "Arsenal FC",
+      "awayTeam": "Everton FC",
+      "provisionalKickoffUtc": "2026-10-24T14:00:00Z"
+    },
+    {
+      "matchweekOrder": 9,
+      "homeTeam": "Liverpool FC",
+      "awayTeam": "Arsenal FC",
+      "provisionalKickoffUtc": "2026-10-31T15:00:00Z"
+    },
+    {
+      "matchweekOrder": 10,
+      "homeTeam": "Arsenal FC",
+      "awayTeam": "Hull City AFC",
+      "provisionalKickoffUtc": "2026-11-07T15:00:00Z"
+    },
+    {
+      "matchweekOrder": 11,
+      "homeTeam": "Newcastle United FC",
+      "awayTeam": "Arsenal FC",
+      "provisionalKickoffUtc": "2026-11-21T15:00:00Z"
+    },
+    {
+      "matchweekOrder": 12,
+      "homeTeam": "Arsenal FC",
+      "awayTeam": "Manchester City FC",
+      "provisionalKickoffUtc": "2026-11-28T15:00:00Z"
+    },
+    {
+      "matchweekOrder": 13,
+      "homeTeam": "Brentford FC",
+      "awayTeam": "Arsenal FC",
+      "provisionalKickoffUtc": "2026-12-02T20:00:00Z"
+    },
+    {
+      "matchweekOrder": 14,
+      "homeTeam": "Tottenham Hotspur FC",
+      "awayTeam": "Arsenal FC",
+      "provisionalKickoffUtc": "2026-12-05T15:00:00Z"
+    },
+    {
+      "matchweekOrder": 15,
+      "homeTeam": "Arsenal FC",
+      "awayTeam": "AFC Bournemouth",
+      "provisionalKickoffUtc": "2026-12-12T15:00:00Z"
+    },
+    {
+      "matchweekOrder": 16,
+      "homeTeam": "Arsenal FC",
+      "awayTeam": "Manchester United FC",
+      "provisionalKickoffUtc": "2026-12-19T15:00:00Z"
+    },
+    {
+      "matchweekOrder": 17,
+      "homeTeam": "Crystal Palace FC",
+      "awayTeam": "Arsenal FC",
+      "provisionalKickoffUtc": "2026-12-26T15:00:00Z"
+    },
+    {
+      "matchweekOrder": 18,
+      "homeTeam": "Fulham FC",
+      "awayTeam": "Arsenal FC",
+      "provisionalKickoffUtc": "2026-12-30T20:00:00Z"
+    },
+    {
+      "matchweekOrder": 19,
+      "homeTeam": "Arsenal FC",
+      "awayTeam": "Ipswich Town FC",
+      "provisionalKickoffUtc": "2027-01-02T12:00:00Z"
+    },
+    {
+      "matchweekOrder": 20,
+      "homeTeam": "Arsenal FC",
+      "awayTeam": "Brentford FC",
+      "provisionalKickoffUtc": "2027-01-06T12:00:00Z"
+    },
+    {
+      "matchweekOrder": 21,
+      "homeTeam": "Hull City AFC",
+      "awayTeam": "Arsenal FC",
+      "provisionalKickoffUtc": "2027-01-16T12:00:00Z"
+    },
+    {
+      "matchweekOrder": 22,
+      "homeTeam": "Arsenal FC",
+      "awayTeam": "Newcastle United FC",
+      "provisionalKickoffUtc": "2027-01-23T12:00:00Z"
+    },
+    {
+      "matchweekOrder": 23,
+      "homeTeam": "Manchester City FC",
+      "awayTeam": "Arsenal FC",
+      "provisionalKickoffUtc": "2027-01-30T12:00:00Z"
+    },
+    {
+      "matchweekOrder": 24,
+      "homeTeam": "Arsenal FC",
+      "awayTeam": "Liverpool FC",
+      "provisionalKickoffUtc": "2027-02-06T12:00:00Z"
+    },
+    {
+      "matchweekOrder": 25,
+      "homeTeam": "Ipswich Town FC",
+      "awayTeam": "Arsenal FC",
+      "provisionalKickoffUtc": "2027-02-10T12:00:00Z"
+    },
+    {
+      "matchweekOrder": 26,
+      "homeTeam": "Arsenal FC",
+      "awayTeam": "Fulham FC",
+      "provisionalKickoffUtc": "2027-02-20T12:00:00Z"
+    },
+    {
+      "matchweekOrder": 27,
+      "homeTeam": "Manchester United FC",
+      "awayTeam": "Arsenal FC",
+      "provisionalKickoffUtc": "2027-02-27T12:00:00Z"
+    },
+    {
+      "matchweekOrder": 28,
+      "homeTeam": "Arsenal FC",
+      "awayTeam": "Crystal Palace FC",
+      "provisionalKickoffUtc": "2027-03-03T12:00:00Z"
+    },
+    {
+      "matchweekOrder": 29,
+      "homeTeam": "Chelsea FC",
+      "awayTeam": "Arsenal FC",
+      "provisionalKickoffUtc": "2027-03-13T12:00:00Z"
+    },
+    {
+      "matchweekOrder": 30,
+      "homeTeam": "Arsenal FC",
+      "awayTeam": "Sunderland AFC",
+      "provisionalKickoffUtc": "2027-03-20T12:00:00Z"
+    },
+    {
+      "matchweekOrder": 31,
+      "homeTeam": "Coventry City FC",
+      "awayTeam": "Arsenal FC",
+      "provisionalKickoffUtc": "2027-04-10T12:00:00Z"
+    },
+    {
+      "matchweekOrder": 32,
+      "homeTeam": "Arsenal FC",
+      "awayTeam": "Aston Villa FC",
+      "provisionalKickoffUtc": "2027-04-17T12:00:00Z"
+    },
+    {
+      "matchweekOrder": 33,
+      "homeTeam": "AFC Bournemouth",
+      "awayTeam": "Arsenal FC",
+      "provisionalKickoffUtc": "2027-04-24T12:00:00Z"
+    },
+    {
+      "matchweekOrder": 34,
+      "homeTeam": "Arsenal FC",
+      "awayTeam": "Tottenham Hotspur FC",
+      "provisionalKickoffUtc": "2027-05-01T12:00:00Z"
+    },
+    {
+      "matchweekOrder": 35,
+      "homeTeam": "Leeds United FC",
+      "awayTeam": "Arsenal FC",
+      "provisionalKickoffUtc": "2027-05-08T12:00:00Z"
+    },
+    {
+      "matchweekOrder": 36,
+      "homeTeam": "Arsenal FC",
+      "awayTeam": "Nottingham Forest FC",
+      "provisionalKickoffUtc": "2027-05-15T12:00:00Z"
+    },
+    {
+      "matchweekOrder": 37,
+      "homeTeam": "Everton FC",
+      "awayTeam": "Arsenal FC",
+      "provisionalKickoffUtc": "2027-05-23T12:00:00Z"
+    },
+    {
+      "matchweekOrder": 38,
+      "homeTeam": "Arsenal FC",
+      "awayTeam": "Brighton & Hove Albion FC",
+      "provisionalKickoffUtc": "2027-05-30T12:00:00Z"
+    }
+  ]
+}

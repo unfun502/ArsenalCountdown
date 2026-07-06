@@ -1,20 +1,25 @@
 type BroadcasterInfo = { name: string; url: string };
 
+// `null` means "verified: no broadcaster holds these rights in this country" —
+// the UI then shows "check local listings" instead of guessing.
 type CompetitionBroadcasters = {
   default: BroadcasterInfo;
-  premierLeague?: BroadcasterInfo;
-  championsLeague?: BroadcasterInfo;
-  faCup?: BroadcasterInfo;
-  leagueCup?: BroadcasterInfo;
+  premierLeague?: BroadcasterInfo | null;
+  championsLeague?: BroadcasterInfo | null;
+  faCup?: BroadcasterInfo | null;
+  leagueCup?: BroadcasterInfo | null;
 };
 
+// Rights verified for the 2026-27 season (July 2026). Known upcoming shifts:
+// UK/DE Champions League moves to Paramount+/Prime from 2027-28, and Viaplay NL
+// is being sold to DPG Media (likely rebrands to Videoland mid-season).
 export const BROADCASTERS: Record<string, CompetitionBroadcasters> = {
   'GB': {
     default: { name: 'Sky Sports / TNT Sports', url: 'https://www.sky.com/watch/sports' },
-    premierLeague: { name: 'Sky Sports / TNT Sports / Amazon Prime', url: 'https://www.sky.com/watch/sports' },
-    championsLeague: { name: 'TNT Sports', url: 'https://www.bt.com/sport' },
-    faCup: { name: 'BBC / ITV / TNT Sports', url: 'https://www.bbc.co.uk/sport/football' },
-    leagueCup: { name: 'Sky Sports', url: 'https://www.sky.com/watch/sports' },
+    premierLeague: { name: 'Sky Sports / TNT Sports', url: 'https://www.skysports.com/watch/sky-sports-premier-league' },
+    championsLeague: { name: 'TNT Sports', url: 'https://www.tnt-sports.co.uk' },
+    faCup: { name: 'BBC / TNT Sports', url: 'https://www.bbc.co.uk/sport/football' },
+    leagueCup: { name: 'Sky Sports / ITV', url: 'https://www.sky.com/watch/sports' },
   },
   'US': {
     default: { name: 'NBC/PCOCK', url: 'https://www.peacocktv.com/sports/soccer/premier-league' },
@@ -24,18 +29,18 @@ export const BROADCASTERS: Record<string, CompetitionBroadcasters> = {
     leagueCup: { name: 'PARAMOUNT+', url: 'https://www.paramountplus.com' },
   },
   'CA': {
-    default: { name: 'FuboTV', url: 'https://www.fubo.tv/welcome/channels' },
-    premierLeague: { name: 'FuboTV', url: 'https://www.fubo.tv/welcome/channels' },
+    default: { name: 'Fubo', url: 'https://www.fubo.tv/welcome/channels' },
+    premierLeague: { name: 'Fubo', url: 'https://www.fubo.tv/welcome/channels' },
     championsLeague: { name: 'DAZN', url: 'https://www.dazn.com/en-CA' },
-    faCup: { name: 'Sportsnet', url: 'https://www.sportsnet.ca' },
+    faCup: { name: 'Sportsnet+', url: 'https://www.sportsnet.ca/plus/' },
     leagueCup: { name: 'DAZN', url: 'https://www.dazn.com/en-CA' },
   },
   'AU': {
-    default: { name: 'Optus Sport', url: 'https://www.optus.com.au/sport/optus-sport' },
-    premierLeague: { name: 'Optus Sport', url: 'https://www.optus.com.au/sport/optus-sport' },
+    default: { name: 'Stan Sport', url: 'https://www.stan.com.au/sport' },
+    premierLeague: { name: 'Stan Sport', url: 'https://www.stan.com.au/sport' },
     championsLeague: { name: 'Stan Sport', url: 'https://www.stan.com.au/sport' },
     faCup: { name: 'Stan Sport', url: 'https://www.stan.com.au/sport' },
-    leagueCup: { name: 'Optus Sport', url: 'https://www.optus.com.au/sport/optus-sport' },
+    leagueCup: { name: 'beIN Sports', url: 'https://www.beinsports.com/en-au/' },
   },
   'DE': {
     default: { name: 'Sky Deutschland', url: 'https://www.sky.de/fussball/premier-league' },
@@ -48,22 +53,22 @@ export const BROADCASTERS: Record<string, CompetitionBroadcasters> = {
     default: { name: 'Canal+', url: 'https://www.canalplus.com/sport/football' },
     premierLeague: { name: 'Canal+', url: 'https://www.canalplus.com/sport/football' },
     championsLeague: { name: 'Canal+', url: 'https://www.canalplus.com/sport/football' },
-    faCup: { name: 'Canal+', url: 'https://www.canalplus.com/sport/football' },
-    leagueCup: { name: 'Canal+', url: 'https://www.canalplus.com/sport/football' },
+    faCup: { name: 'beIN Sports', url: 'https://www.beinsports.com/fr-fr/' },
+    leagueCup: { name: 'beIN Sports', url: 'https://www.beinsports.com/fr-fr/' },
   },
   'ES': {
     default: { name: 'DAZN', url: 'https://www.dazn.com/es-ES/sport/football' },
     premierLeague: { name: 'DAZN', url: 'https://www.dazn.com/es-ES/sport/football' },
     championsLeague: { name: 'Movistar Plus+', url: 'https://www.movistarplus.es' },
-    faCup: { name: 'DAZN', url: 'https://www.dazn.com/es-ES/sport/football' },
-    leagueCup: { name: 'DAZN', url: 'https://www.dazn.com/es-ES/sport/football' },
+    faCup: { name: 'Movistar Plus+', url: 'https://www.movistarplus.es' },
+    leagueCup: null, // no Spanish broadcaster holds 2026-27 Carabao Cup rights
   },
   'IT': {
     default: { name: 'Sky Italia', url: 'https://sport.sky.it/calcio/premier-league' },
     premierLeague: { name: 'Sky Italia', url: 'https://sport.sky.it/calcio/premier-league' },
     championsLeague: { name: 'Sky Italia / Amazon Prime', url: 'https://sport.sky.it' },
-    faCup: { name: 'Sky Italia', url: 'https://sport.sky.it' },
-    leagueCup: { name: 'Sky Italia', url: 'https://sport.sky.it' },
+    faCup: { name: 'DAZN', url: 'https://www.dazn.com/it-IT' },
+    leagueCup: null, // no Italian broadcaster holds 2026-27 Carabao Cup rights
   },
   'NL': {
     default: { name: 'Viaplay', url: 'https://viaplay.nl/sport/voetbal' },
@@ -73,24 +78,24 @@ export const BROADCASTERS: Record<string, CompetitionBroadcasters> = {
     leagueCup: { name: 'Viaplay', url: 'https://viaplay.nl/sport/voetbal' },
   },
   'IN': {
-    default: { name: 'Star Sports / Hotstar', url: 'https://www.hotstar.com/sports/football' },
-    premierLeague: { name: 'Star Sports / Hotstar', url: 'https://www.hotstar.com/sports/football' },
+    default: { name: 'JioHotstar / Star Sports', url: 'https://www.jiohotstar.com' },
+    premierLeague: { name: 'JioHotstar / Star Sports', url: 'https://www.jiohotstar.com' },
     championsLeague: { name: 'Sony LIV / Sony Sports', url: 'https://www.sonyliv.com' },
     faCup: { name: 'Sony LIV', url: 'https://www.sonyliv.com' },
-    leagueCup: { name: 'Star Sports / Hotstar', url: 'https://www.hotstar.com/sports/football' },
+    leagueCup: null, // no Indian broadcaster holds 2026-27 Carabao Cup rights
   },
   'BR': {
-    default: { name: 'ESPN', url: 'https://www.espn.com.br' },
-    premierLeague: { name: 'ESPN', url: 'https://www.espn.com.br' },
-    championsLeague: { name: 'HBO Max / TNT Sports', url: 'https://play.max.com' },
-    faCup: { name: 'ESPN', url: 'https://www.espn.com.br' },
-    leagueCup: { name: 'ESPN', url: 'https://www.espn.com.br' },
+    default: { name: 'ESPN / Disney+', url: 'https://www.disneyplus.com/pt-br' },
+    premierLeague: { name: 'ESPN / Disney+', url: 'https://www.disneyplus.com/pt-br' },
+    championsLeague: { name: 'HBO Max / TNT Sports', url: 'https://www.max.com/br' },
+    faCup: { name: 'ESPN / Disney+', url: 'https://www.disneyplus.com/pt-br' },
+    leagueCup: { name: 'ESPN / Disney+', url: 'https://www.disneyplus.com/pt-br' },
   },
   'IE': {
     default: { name: 'Sky Sports / TNT Sports', url: 'https://www.sky.com/watch/sports' },
     premierLeague: { name: 'Sky Sports / TNT Sports / Premier Sports', url: 'https://www.sky.com/watch/sports' },
-    championsLeague: { name: 'TNT Sports', url: 'https://www.bt.com/sport' },
-    faCup: { name: 'BBC / ITV / TNT Sports', url: 'https://www.bbc.co.uk/sport/football' },
+    championsLeague: { name: 'Premier Sports / RTÉ / Virgin Media', url: 'https://premiersportsireland.com' },
+    faCup: { name: 'Premier Sports', url: 'https://premiersportsireland.com' },
     leagueCup: { name: 'Sky Sports', url: 'https://www.sky.com/watch/sports' },
   },
 };
@@ -112,8 +117,13 @@ export function getBroadcaster(countryCode: string, competitionName: string): Br
   if (!country) return null;
 
   const compKey = getCompetitionKey(competitionName);
-  if (compKey && country[compKey]) return country[compKey]!;
-  return country.default;
+  // Unknown competition (friendlies, Club World Cup, ...): claiming the PL
+  // broadcaster would likely be wrong — let the UI show "check local listings".
+  if (!compKey) return null;
+  const entry = country[compKey];
+  // Explicit null = verified "nobody broadcasts this here"; undefined = no data.
+  if (entry === null) return null;
+  return entry ?? country.default;
 }
 
 export const ARSENAL_TEAM_ID = 57;

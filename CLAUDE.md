@@ -55,6 +55,12 @@ Caddy routes `/football-proxy/*` → `football-proxy:3012`.
 Env vars `FOOTBALL_DATA_API_KEY` and `FOOTBALL_PROXY_SECRET` set in `~/feedback/.env`.
 To restart: `cd ~/feedback && docker compose restart football-proxy`
 
+## Data Verification
+- `GET /api/fixtures` returns the full merged upcoming match list plus per-source health (`degraded`, `sources`) — consumed by the weekly verification routine, not the UI.
+- `shared/fixtures-baseline-2026-27.json` — released 2026-27 PL fixture list used as a cross-check baseline (dates provisional; opponent order stable).
+- A Claude scheduled task `arsenal-countdown-weekly-verify` (Mondays 8am, runs while the desktop app is open) web-checks fixtures + broadcaster map and emails devlab502@proton.me on discrepancy via Zoho SMTP (`send-alert.py` in the task folder; app-password credentials in `~\.claude\secrets\zoho-smtp.json`, never committed).
+- Broadcaster rights in `shared/constants.ts` were verified for 2026-27 (July 2026). `null` entries mean "verified: no broadcaster in that country" — UI shows "check local listings".
+
 ## Database Needs
 - **Current:** In-memory cache in both Express server and Cloudflare Worker. Drizzle ORM schema defined (`matches` table) but not wired up at runtime.
 - **Future:** Could persist match data + user preferences to PostgREST at api.devlab502.net. Tables needed: `matches` (competition, teams, venue, kickoff, broadcasts).

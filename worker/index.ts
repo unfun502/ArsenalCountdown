@@ -16,6 +16,27 @@ interface Env {
 declare const FOOTBALL_PROXY_SECRET: string;
 declare const SPORTSDB_API_KEY: string;
 
+interface SourceHealth {
+  footballData: { status: "ok" | "error"; matches: number };
+  sportsDb: { status: "ok" | "error"; matches: number };
+}
+
+interface UpcomingMatch {
+  competition: string;
+  homeTeam: string;
+  awayTeam: string;
+  venue: string;
+  utcDate: string; // ISO date string
+  timeTbc: boolean; // kickoff time not yet confirmed (date-only fixture)
+  source: "football-data" | "thesportsdb";
+}
+
+interface FetchResult {
+  matches: UpcomingMatch[];
+  sources: SourceHealth;
+  degraded: boolean;
+}
+
 interface MatchData {
   id: number;
   competition: string;
@@ -23,16 +44,23 @@ interface MatchData {
   awayTeam: string;
   venue: string;
   kickoff: string; // ISO date string
+  timeTbc: boolean;
   broadcasts: Record<string, string>;
+  sources: SourceHealth;
 }
 
 const ARSENAL_FOOTBALL_DATA_ID = "57";
 const ARSENAL_SPORTSDB_ID = "133604";
-const FA_CUP_LEAGUE_ID = "4482";
-const LEAGUE_CUP_ID = "4570";
 const FOOTBALL_PROXY_URL = "https://api.devlab502.net/football-proxy";
 const NO_MATCHES_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 const MATCH_CACHE_TTL = 30 * 60 * 1000; // 30 minutes — refresh periodically to catch newly scheduled matches
+// When a source failed we may be showing the wrong "next" match — retry much sooner.
+const DEGRADED_MATCH_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const DEGRADED_NO_MATCHES_CACHE_DURATION = 60 * 1000; // 1 minute
+const FIXTURES_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+// Arsenal never plays twice within 24h — a SportsDB event that close to a
+// football-data match is the same fixture reported by both sources.
+const SPORTSDB_DEDUPE_WINDOW = 24 * 60 * 60 * 1000;
 const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
 const RATE_LIMIT_MAX = 30; // max requests per window per IP
 
@@ -58,7 +86,9 @@ const SECURITY_HEADERS: Record<string, string> = {
 // Module-level cache — persists for the lifetime of a Worker instance
 let cachedMatch: MatchData | null = null;
 let cacheTimestamp = 0;
-let noMatchesCache: { timestamp: number } | null = null;
+let cachedDegraded = false;
+let noMatchesCache: { timestamp: number; degraded: boolean } | null = null;
+let fixturesCache: { data: unknown; timestamp: number; degraded: boolean } | null = null;
 let matchIdCounter = 1;
 
 // Simple in-memory rate limiter (per Worker instance)
@@ -104,31 +134,24 @@ function injectAnalytics(response: Response, env: Env): Response {
   return response
 }
 
-async function handleNextMatch(env: Env): Promise<Response> {
-  // Return cached match if it's still in the future AND cache is fresh
-  const cacheAge = Date.now() - cacheTimestamp;
-  if (cachedMatch && new Date(cachedMatch.kickoff) > new Date() && cacheAge < MATCH_CACHE_TTL) {
-    return jsonResponse(cachedMatch);
-  }
-  cachedMatch = null;
+// The APIs often omit the venue; guessing "Emirates Stadium" is wrong for
+// away fixtures, so fall back based on who's at home.
+function fallbackVenue(homeTeam: string): string {
+  return homeTeam.includes("Arsenal") ? "Emirates Stadium" : `${homeTeam} (Away)`;
+}
 
-  // Return no-matches cache if still valid
-  if (
-    noMatchesCache &&
-    Date.now() - noMatchesCache.timestamp < NO_MATCHES_CACHE_DURATION
-  ) {
-    return jsonResponse(
-      { message: "No upcoming matches found", seasonStatus: "off-season" },
-      404
-    );
-  }
-
-  const allMatches: any[] = [];
+async function fetchAllMatches(): Promise<FetchResult> {
   const now = new Date();
+  const todayUtc = now.toISOString().slice(0, 10);
+  const sources: SourceHealth = {
+    footballData: { status: "error", matches: 0 },
+    sportsDb: { status: "error", matches: 0 },
+  };
 
   // Football Data API via VPS proxy (Premier League + Champions League).
   // Direct calls to football-data.org time out from Cloudflare datacenter IPs;
   // the proxy at api.devlab502.net relays through a residential VPS IP.
+  const fdMatches: UpcomingMatch[] = [];
   try {
     const response = await fetch(
       `${FOOTBALL_PROXY_URL}/teams/${ARSENAL_FOOTBALL_DATA_ID}/matches?status=TIMED,SCHEDULED&limit=50`,
@@ -139,16 +162,19 @@ async function handleNextMatch(env: Env): Promise<Response> {
     );
     if (response.ok) {
       const data: any = await response.json();
-      const futureMatches = (data.matches || [])
-        .filter((m: any) => new Date(m.utcDate) > now)
-        .map((m: any) => ({
+      for (const m of data.matches || []) {
+        if (new Date(m.utcDate) <= now) continue;
+        fdMatches.push({
           competition: m.competition.name,
           homeTeam: m.homeTeam.name,
           awayTeam: m.awayTeam.name,
-          venue: m.venue || "Emirates Stadium",
+          venue: m.venue || fallbackVenue(m.homeTeam.name),
           utcDate: m.utcDate,
-        }));
-      allMatches.push(...futureMatches);
+          timeTbc: false,
+          source: "football-data",
+        });
+      }
+      sources.footballData = { status: "ok", matches: fdMatches.length };
     } else {
       console.error("Football proxy non-OK response:", response.status);
     }
@@ -156,7 +182,11 @@ async function handleNextMatch(env: Env): Promise<Response> {
     console.error("Football proxy error:", e?.message ?? e);
   }
 
-  // TheSportsDB API (FA Cup + League Cup — not covered by football-data.org free tier).
+  // TheSportsDB API — all competitions, so cups, Europa/Conference League,
+  // Community Shield, and friendlies are covered. Fixtures football-data
+  // already returned (PL/CL) are deduped by kickoff proximity, which also
+  // makes SportsDB a full fallback when the proxy is down.
+  const sdMatches: UpcomingMatch[] = [];
   try {
     const response = await fetch(
       `https://www.thesportsdb.com/api/v1/json/${SPORTSDB_API_KEY}/eventsnext.php?id=${ARSENAL_SPORTSDB_ID}`,
@@ -164,24 +194,34 @@ async function handleNextMatch(env: Env): Promise<Response> {
     );
     if (response.ok) {
       const data: any = await response.json();
-      if (data.events) {
-        const cupMatches = data.events
-          .filter((e: any) => {
-            const isRelevant =
-              e.idLeague === FA_CUP_LEAGUE_ID ||
-              e.idLeague === LEAGUE_CUP_ID;
-            const eventDate = new Date(`${e.dateEvent}T${e.strTime || "00:00:00"}Z`);
-            return isRelevant && eventDate > now;
-          })
-          .map((e: any) => ({
-            competition: e.strLeague,
-            homeTeam: e.strHomeTeam,
-            awayTeam: e.strAwayTeam,
-            venue: e.strVenue || "Emirates Stadium",
-            utcDate: `${e.dateEvent}T${e.strTime || "00:00:00"}Z`,
-          }));
-        allMatches.push(...cupMatches);
+      const fdKickoffs = fdMatches.map((m) => new Date(m.utcDate).getTime());
+      for (const e of data.events || []) {
+        if (!e.dateEvent) continue;
+        // TheSportsDB reports null/"00:00:00" when kickoff isn't confirmed;
+        // give those a provisional midday slot so a same-day fixture neither
+        // vanishes at midnight UTC nor counts down to 00:00.
+        const hasTime = e.strTime && e.strTime !== "00:00:00";
+        const timeTbc = !hasTime;
+        const utcDate = hasTime
+          ? `${e.dateEvent}T${e.strTime}Z`
+          : `${e.dateEvent}T12:00:00Z`;
+        const isUpcoming = timeTbc
+          ? e.dateEvent >= todayUtc
+          : new Date(utcDate) > now;
+        if (!isUpcoming) continue;
+        const kickoffMs = new Date(utcDate).getTime();
+        if (fdKickoffs.some((k) => Math.abs(k - kickoffMs) < SPORTSDB_DEDUPE_WINDOW)) continue;
+        sdMatches.push({
+          competition: e.strLeague,
+          homeTeam: e.strHomeTeam,
+          awayTeam: e.strAwayTeam,
+          venue: e.strVenue || fallbackVenue(e.strHomeTeam),
+          utcDate,
+          timeTbc,
+          source: "thesportsdb",
+        });
       }
+      sources.sportsDb = { status: "ok", matches: sdMatches.length };
     } else {
       console.error("TheSportsDB API non-OK response:", response.status);
     }
@@ -189,19 +229,56 @@ async function handleNextMatch(env: Env): Promise<Response> {
     console.error("TheSportsDB API error:", e?.message ?? e);
   }
 
-  allMatches.sort(
+  const matches = [...fdMatches, ...sdMatches].sort(
     (a, b) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime()
   );
+  const degraded =
+    sources.footballData.status !== "ok" || sources.sportsDb.status !== "ok";
 
-  const nextMatch = allMatches[0];
+  return { matches, sources, degraded };
+}
+
+async function handleNextMatch(env: Env): Promise<Response> {
+  // Return cached match if it's still in the future AND cache is fresh.
+  // A degraded fetch (a source was down) gets a much shorter TTL — the
+  // cached "next" match may be wrong if the missing source had an earlier one.
+  const cacheAge = Date.now() - cacheTimestamp;
+  const matchTtl = cachedDegraded ? DEGRADED_MATCH_CACHE_TTL : MATCH_CACHE_TTL;
+  if (cachedMatch && new Date(cachedMatch.kickoff) > new Date() && cacheAge < matchTtl) {
+    return jsonResponse(cachedMatch);
+  }
+  cachedMatch = null;
+
+  // Return no-matches cache if still valid
+  if (noMatchesCache) {
+    const ttl = noMatchesCache.degraded
+      ? DEGRADED_NO_MATCHES_CACHE_DURATION
+      : NO_MATCHES_CACHE_DURATION;
+    if (Date.now() - noMatchesCache.timestamp < ttl) {
+      return jsonResponse(
+        { message: "No upcoming matches found", seasonStatus: noMatchesCache.degraded ? "unknown" : "off-season" },
+        404
+      );
+    }
+  }
+
+  const { matches, sources, degraded } = await fetchAllMatches();
+  const nextMatch = matches[0];
 
   if (!nextMatch) {
-    noMatchesCache = { timestamp: Date.now() };
+    noMatchesCache = { timestamp: Date.now(), degraded };
+    // Only claim off-season when both sources answered — an empty result
+    // during an outage should render as an error, not "Season Complete".
     return jsonResponse(
-      { message: "No upcoming matches found", seasonStatus: "off-season" },
+      {
+        message: "No upcoming matches found",
+        seasonStatus: degraded ? "unknown" : "off-season",
+        sources,
+      },
       404
     );
   }
+  noMatchesCache = null;
 
   cachedMatch = {
     id: matchIdCounter++,
@@ -210,17 +287,44 @@ async function handleNextMatch(env: Env): Promise<Response> {
     awayTeam: nextMatch.awayTeam,
     venue: nextMatch.venue,
     kickoff: nextMatch.utcDate,
+    timeTbc: nextMatch.timeTbc,
     broadcasts: {},
+    sources,
   };
   cacheTimestamp = Date.now();
+  cachedDegraded = degraded;
 
   return jsonResponse(cachedMatch);
+}
+
+// Full upcoming fixture list plus per-source health — consumed by the weekly
+// schedule-verification routine, not by the app UI.
+async function handleFixtures(): Promise<Response> {
+  if (fixturesCache) {
+    const ttl = fixturesCache.degraded ? DEGRADED_NO_MATCHES_CACHE_DURATION : FIXTURES_CACHE_TTL;
+    if (Date.now() - fixturesCache.timestamp < ttl) {
+      return jsonResponse(fixturesCache.data);
+    }
+  }
+
+  const { matches, sources, degraded } = await fetchAllMatches();
+  const payload = {
+    fetchedAt: new Date().toISOString(),
+    degraded,
+    sources,
+    matchCount: matches.length,
+    matches,
+  };
+  fixturesCache = { data: payload, timestamp: Date.now(), degraded };
+  return jsonResponse(payload);
 }
 
 async function handleClearCache(): Promise<Response> {
   cachedMatch = null;
   cacheTimestamp = 0;
+  cachedDegraded = false;
   noMatchesCache = null;
+  fixturesCache = null;
   return jsonResponse({ message: "Cache cleared successfully" });
 }
 
@@ -349,6 +453,10 @@ export default {
 
     if (url.pathname === "/api/next-match") {
       return handleNextMatch(env);
+    }
+
+    if (url.pathname === "/api/fixtures") {
+      return handleFixtures();
     }
 
     if (url.pathname === "/api/clear-cache" && request.method === "POST") {
