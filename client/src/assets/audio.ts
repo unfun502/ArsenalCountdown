@@ -25,6 +25,11 @@ const SPIN_PATH = '/sounds/splitflap-click.mp3';
 const TICK_PATH = '/sounds/splitflap-tick.mp3';
 const POOL_SIZE = 4;
 
+// iPadOS 13+ reports as MacIntel but has touch points
+const IS_IOS = typeof navigator !== 'undefined' &&
+  (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+
 function log(msg: string) {
   console.log(`[audio] ${msg}`);
 }
@@ -107,6 +112,13 @@ export function enableAndPlay(): void {
   soundEnabled = true;
   localStorage.setItem('arsenal-countdown-sound', 'on');
 
+  // iOS 16.4+: declare a playback session so Web Audio output is not silenced
+  // by the ringer/silent switch and survives better across interruptions.
+  try {
+    const session = (navigator as any).audioSession;
+    if (session) session.type = 'playback';
+  } catch {}
+
   // Create and resume AudioContext synchronously here, while we are inside the
   // user-gesture call stack. iOS only grants AudioContext.resume() permission
   // when called synchronously within a gesture — async calls (e.g. inside
@@ -117,8 +129,15 @@ export function enableAndPlay(): void {
     if (AC) {
       webCtx = new AC();
       webCtx.resume().catch(() => {}); // synchronous gesture → iOS grants this
+      // iOS moves the context to 'interrupted' (a state this code never
+      // checked for) when the media session changes; claw back automatically.
+      webCtx.onstatechange = () => {
+        if (soundEnabled && webCtx && webCtx.state !== 'running') {
+          webCtx.resume().catch(() => {});
+        }
+      };
     }
-  } else if (webCtx.state === 'suspended') {
+  } else if (webCtx.state !== 'running') {
     webCtx.resume().catch(() => {});
   }
 
@@ -188,7 +207,8 @@ export function playClick(): void {
 
   log(`playClick: webAudioReady=${webAudioReady} ctx=${webCtx?.state ?? 'null'} buf=${!!clickBuffer} pool=${clickPool.length}`);
 
-  if (webAudioReady && webCtx && clickBuffer && webCtx.state === 'running') {
+  const playViaWebAudio = (): boolean => {
+    if (!(webAudioReady && webCtx && clickBuffer && webCtx.state === 'running')) return false;
     try {
       const source = webCtx.createBufferSource();
       source.buffer = clickBuffer;
@@ -198,25 +218,39 @@ export function playClick(): void {
       gain.connect(webCtx.destination);
       source.start(0);
       log('playClick: web audio OK');
-      return;
+      return true;
     } catch (e: any) {
       log(`playClick: web audio err: ${e?.message}`);
+      return false;
     }
-  }
+  };
 
-  // Fallback: HTML5 Audio pool (handles iOS when AudioContext is suspended)
-  if (clickPool.length > 0) {
+  const playViaPool = (): boolean => {
+    if (clickPool.length === 0) return false;
     const audio = clickPool[clickPoolIndex];
     clickPoolIndex = (clickPoolIndex + 1) % clickPool.length;
     audio.currentTime = 0;
     audio.play().then(() => {
       log('playClick: html5 pool OK');
       // Session now active — try to resume AudioContext for future calls
-      if (webCtx && webCtx.state === 'suspended') {
+      if (webCtx && webCtx.state !== 'running') {
         webCtx.resume().catch(() => {});
       }
     }).catch((e: any) => log(`playClick: pool err: ${e?.message}`));
-  } else {
+    return true;
+  };
+
+  // iOS: prefer the gesture-unlocked HTML5 pool. iOS tears down or zombifies
+  // the AudioContext once the audible media session ends (the context can even
+  // report 'running' while producing no output), which is why Web Audio ticks
+  // died after the first one. Replaying an already-unlocked HTML5 element from
+  // a timer is the one path iOS reliably keeps working.
+  if (IS_IOS) {
+    if (!playViaPool()) playViaWebAudio();
+    return;
+  }
+
+  if (!playViaWebAudio() && !playViaPool()) {
     log('playClick: no pool, no audio!');
   }
 }
@@ -231,7 +265,7 @@ export function startSpin(): void {
   }
   isSpinning = true;
   // Resume AudioContext while HTML5 audio session is active
-  if (webCtx && webCtx.state === 'suspended') {
+  if (webCtx && webCtx.state !== 'running') {
     webCtx.resume().catch(() => {});
   }
   log('spin started');
@@ -239,17 +273,24 @@ export function startSpin(): void {
 
 export function stopSpin(): void {
   log('stopSpin called');
-  // Resume AudioContext while spin audio is still active (iOS session alive)
-  if (webCtx && webCtx.state === 'suspended') {
+  // Resume AudioContext while spin audio is still active (session alive)
+  if (webCtx && webCtx.state !== 'running') {
     webCtx.resume().catch(() => {});
   }
   if (spinAudio) {
-    // MUTE instead of pause: iOS releases the audio session when all HTML5
-    // elements are paused, which suspends the AudioContext and kills Web Audio
-    // ticks. Keeping the element playing-but-muted holds the session open.
-    // iOS respects .muted (unlike .volume which is hardware-only).
-    spinAudio.muted = true;
-    // Don't pause — the looping muted element IS the session keepalive.
+    if (IS_IOS) {
+      // Pause outright on iOS. The old muted-loop keepalive backfired there:
+      // a muted-only element doesn't hold the audio session, iOS tears it
+      // down anyway, and ticks now come from the HTML5 pool which doesn't
+      // need a live session.
+      spinAudio.pause();
+      spinAudio.currentTime = 0;
+    } else {
+      // MUTE instead of pause on desktop: keeping the element playing-but-
+      // muted prevents browsers from suspending the "silent" audio graph
+      // between Web Audio ticks.
+      spinAudio.muted = true;
+    }
   }
   isSpinning = false;
 }
