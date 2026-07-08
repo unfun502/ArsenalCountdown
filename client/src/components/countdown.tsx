@@ -23,6 +23,26 @@ interface CountdownProps {
   kickoff: Date;
 }
 
+// Split-flap short names for clubs whose stripped name still exceeds a
+// 10-cell row or splits badly. Keys are lowercase names after FC/AFC stripping.
+const TEAM_FLAP_NAMES: Record<string, string> = {
+  'brighton & hove albion': 'BRIGHTON',
+  'afc bournemouth': 'BOURNEMTH',
+  'wolverhampton wanderers': 'WOLVES',
+  'sheffield united': 'SHEFF UTD',
+  'sheffield wednesday': 'SHEFF WED',
+  'west bromwich albion': 'WEST BROM',
+  'queens park rangers': 'QPR',
+  'milton keynes dons': 'MK DONS',
+};
+
+// Strip the generic FC/AFC prefix/suffix that wastes flap cells, then apply
+// club-specific short names.
+function displayTeamName(name: string): string {
+  const stripped = name.replace(/^FC\s+/i, '').replace(/\s+(?:AFC|FC)$/i, '').trim();
+  return (TEAM_FLAP_NAMES[stripped.toLowerCase()] ?? stripped).toUpperCase();
+}
+
 interface TimeLeft {
   days: number;
   hours: number;
@@ -759,7 +779,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
             {(() => {
               const MAX_CHARS = 10;
               const isArsenalHome = match.homeTeam.toLowerCase().includes('arsenal');
-              const opponentName = (isArsenalHome ? match.awayTeam : match.homeTeam).toUpperCase();
+              const opponentName = displayTeamName(isArsenalHome ? match.awayTeam : match.homeTeam);
               
               const renderLine = (text: string, keyPrefix: string) => {
                 const truncated = text.substring(0, MAX_CHARS);
@@ -849,7 +869,8 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
               if (userCountry === 'US' && espnData?.tvProvider) {
                 broadcasterName = espnData.tvProvider;
               } else {
-                broadcasterName = getBroadcaster(userCountry, match.competition)?.name ?? null;
+                const broadcaster = getBroadcaster(userCountry, match.competition);
+                broadcasterName = broadcaster ? (broadcaster.flapName ?? broadcaster.name) : null;
               }
               // No verified broadcaster for this competition/country:
               // the split-flap reads CHECK / LOCAL across two rows.
