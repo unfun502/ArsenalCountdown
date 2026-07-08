@@ -17,6 +17,7 @@ let clickPoolIndex = 0;
 let webCtx: AudioContext | null = null;
 let clickBuffer: AudioBuffer | null = null;
 let webAudioReady = false;
+let lastTickSource: AudioBufferSourceNode | null = null;
 
 let keepaliveOsc: OscillatorNode | null = null;
 let keepaliveGain: GainNode | null = null;
@@ -217,6 +218,10 @@ export function playClick(): void {
       source.connect(gain);
       gain.connect(webCtx.destination);
       source.start(0);
+      lastTickSource = source;
+      source.onended = () => {
+        if (lastTickSource === source) lastTickSource = null;
+      };
       log('playClick: web audio OK');
       return true;
     } catch (e: any) {
@@ -257,6 +262,17 @@ export function playClick(): void {
 
 export function startSpin(): void {
   if (!soundEnabled || !spinAudio || isSpinning) return;
+  // Cut any still-ringing tick so it never overlaps the spin sound
+  if (lastTickSource) {
+    try { lastTickSource.stop(); } catch {}
+    lastTickSource = null;
+  }
+  for (const a of clickPool) {
+    if (!a.paused) {
+      a.pause();
+      a.currentTime = 0;
+    }
+  }
   spinAudio.currentTime = 0;
   spinAudio.volume = 0.5;
   spinAudio.muted = false; // unmute (may have been in keepalive mode)

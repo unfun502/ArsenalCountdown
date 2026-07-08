@@ -79,13 +79,11 @@ const SplitFlapDigit = ({
     if (initialAnimation) {
       wasAnimating.current = true;
       setIsFlipping(true);
-      playSoundRef.current();
-      
+      // No per-cell ticks during the spin — the spin loop mp3 is the sound.
+      // Ticks fired here race the spin start (child effects run before the
+      // parent effect that calls startSpin) and overlap the two sounds.
       spinIntervalRef.current = setInterval(() => {
         setDisplayValue(getRandomDigit());
-        if (Math.random() < 0.2) {
-          playSoundRef.current();
-        }
       }, 100);
       
       return () => {
@@ -164,13 +162,9 @@ const SplitFlapChar = ({
     if (initialAnimation) {
       wasAnimating.current = true;
       setIsFlipping(true);
-      playSoundRef.current();
-      
+      // No per-cell ticks during the spin — see SplitFlapDigit above.
       spinIntervalRef.current = setInterval(() => {
         setDisplayChar(getRandomChar());
-        if (Math.random() < 0.2) {
-          playSoundRef.current();
-        }
       }, 100);
       
       return () => {
@@ -269,6 +263,7 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
   const [soundOn, setSoundOn] = useState(false);
   const [userCountry, setUserCountry] = useState<string>("");
   const initialAnimationRef = useRef<NodeJS.Timeout | null>(null);
+  const respinCounterRef = useRef(0);
   
   // Calculate days until match
   const now = new Date();
@@ -345,6 +340,15 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
       const seconds = Math.floor(diffInSeconds % 60);
 
       setTimeLeft({ days, hours, minutes, seconds });
+
+      // Re-spin every 15th seconds-update, in lockstep with the tick cycle:
+      // the spin replaces that second's tick instead of firing from an
+      // independent 15s interval that could land mid-tick and overlap it.
+      respinCounterRef.current += 1;
+      if (respinCounterRef.current >= 15) {
+        respinCounterRef.current = 0;
+        setInitialLoad(true);
+      }
     };
 
     calculateTimeLeft();
@@ -385,14 +389,6 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
   
   useEffect(() => {
     disableSound();
-  }, []);
-
-  // Periodic re-spin every 15 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setInitialLoad(true);
-    }, 15000);
-    return () => clearInterval(interval);
   }, []);
 
   // Fetch user location for broadcaster info
