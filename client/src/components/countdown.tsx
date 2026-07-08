@@ -408,6 +408,67 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
     });
   };
 
+  // Every split-flap panel row is 10 cells — text must be mapped/truncated to fit.
+  const MAX_FLAPS = 10;
+
+  const renderFlapRow = (text: string, keyPrefix: string) => {
+    const truncated = text.substring(0, MAX_FLAPS);
+
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      return truncated.split('').map((char: string, index: number) => (
+        <SplitFlapChar
+          key={`${keyPrefix}-${index}`}
+          value={char}
+          initialAnimation={initialLoad}
+          playSound={playClickSound}
+        />
+      ));
+    }
+
+    const chars = truncated.split('');
+    const rightPadding = Math.max(0, MAX_FLAPS - chars.length);
+    return (
+      <>
+        {chars.map((char: string, index: number) => (
+          <SplitFlapChar
+            key={`${keyPrefix}-${index}`}
+            value={char}
+            initialAnimation={initialLoad}
+            playSound={playClickSound}
+          />
+        ))}
+        {Array(rightPadding).fill(0).map((_, i) => (
+          <div key={`${keyPrefix}-empty-${i}`} className="empty-flap">
+            <div className="splitflap-dot left"></div>
+            <div className="splitflap-dot right"></div>
+          </div>
+        ))}
+      </>
+    );
+  };
+
+  const competitionLines = (competition: string): string[] => {
+    const name = competition.toLowerCase();
+    if (name.includes('premier league')) return ['PREMIER', 'LEAGUE'];
+    if (name.includes('champions league')) return ['CHAMPIONS'];
+    if (name.includes('europa league')) return ['EUROPA'];
+    if (name.includes('conference league')) return ['CONFERENCE'];
+    if (name.includes('community shield')) return ['COMMUNITY', 'SHIELD'];
+    if (name.includes('friendl')) return ['FRIENDLY'];
+    if (name.includes('fa cup')) return ['FA CUP'];
+    if (name.includes('league cup') || name.includes('efl cup') || name.includes('carabao')) return ['LEAGUE CUP'];
+    // Unknown competition: wrap words into at most two 10-char rows
+    const rows: string[] = [];
+    let current = '';
+    for (const word of competition.toUpperCase().split(' ')) {
+      if (!current) current = word;
+      else if (`${current} ${word}`.length <= MAX_FLAPS) current += ` ${word}`;
+      else { rows.push(current); current = word; }
+    }
+    if (current) rows.push(current);
+    return rows.slice(0, 2).map((r) => r.substring(0, MAX_FLAPS));
+  };
+
   return (
     <Card className="bg-transparent border-0 shadow-none">
       <CardContent className="p-0">
@@ -775,302 +836,32 @@ export default function Countdown({ kickoff, match }: CountdownProps & { match: 
         {/* Competition and TV Channel Panel */}
         <div className="splitflap-display mt-6">
           <div className="flex flex-col space-y-4">
-            {/* Competition Name - Split into two lines */}
-            {match.competition === "Premier League" ? (
-              <>
-                <div className="flex justify-center space-x-1 md:fixed-width-panel">
-                  {(() => {
-                    const text = "PREMIER";
-                    
-                    // For mobile, just render the characters normally
-                    if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                      return text.split('').map((char: string, index: number) => (
-                        <SplitFlapChar 
-                          key={`competition1-${index}`} 
-                          value={char} 
-                          initialAnimation={initialLoad}
-                          playSound={playClickSound}
-                        />
-                      ));
-                    }
-                    
-                    // For desktop, ensure exactly 10 cells with centered text
-                    const chars = text.split('');
-                    const totalChars = chars.length;
-                    const emptyFlapsNeeded = 10 - totalChars;
-                    
-                    // Calculate left and right padding
-                    const leftPadding = 0;
-                    const rightPadding = Math.max(0, emptyFlapsNeeded); // All empty flaps go to the right
-                    
-                    return (
-                      <>
-                        {/* Left empty flaps */}
-                        {Array(leftPadding).fill(0).map((_, i) => (
-                          <div key={`premier-left-empty-${i}`} className="empty-flap">
-                            <div className="splitflap-dot left"></div>
-                            <div className="splitflap-dot right"></div>
-                          </div>
-                        ))}
-                        
-                        {/* Actual characters */}
-                        {chars.map((char: string, index: number) => (
-                          <SplitFlapChar 
-                            key={`competition1-${index}`} 
-                            value={char} 
-                            initialAnimation={initialLoad}
-                            playSound={playClickSound}
-                          />
-                        ))}
-                        
-                        {/* Right empty flaps */}
-                        {Array(rightPadding).fill(0).map((_, i) => (
-                          <div key={`premier-right-empty-${i}`} className="empty-flap">
-                            <div className="splitflap-dot left"></div>
-                            <div className="splitflap-dot right"></div>
-                          </div>
-                        ))}
-                      </>
-                    );
-                  })()}
-                </div>
-                <div className="flex justify-center space-x-1 md:fixed-width-panel">
-                  {(() => {
-                    const text = "LEAGUE";
-                    
-                    // For mobile, just render the characters normally
-                    if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                      return text.split('').map((char: string, index: number) => (
-                        <SplitFlapChar 
-                          key={`competition2-${index}`} 
-                          value={char} 
-                          initialAnimation={initialLoad}
-                          playSound={playClickSound}
-                        />
-                      ));
-                    }
-                    
-                    // For desktop, ensure exactly 10 cells with centered text
-                    const chars = text.split('');
-                    const totalChars = chars.length;
-                    const emptyFlapsNeeded = 10 - totalChars;
-                    
-                    // Calculate left and right padding
-                    const leftPadding = 0;
-                    const rightPadding = Math.max(0, emptyFlapsNeeded); // All empty flaps go to the right
-                    
-                    return (
-                      <>
-                        {/* Left empty flaps */}
-                        {Array(leftPadding).fill(0).map((_, i) => (
-                          <div key={`league-left-empty-${i}`} className="empty-flap">
-                            <div className="splitflap-dot left"></div>
-                            <div className="splitflap-dot right"></div>
-                          </div>
-                        ))}
-                        
-                        {/* Actual characters */}
-                        {chars.map((char: string, index: number) => (
-                          <SplitFlapChar 
-                            key={`competition2-${index}`} 
-                            value={char} 
-                            initialAnimation={initialLoad}
-                            playSound={playClickSound}
-                          />
-                        ))}
-                        
-                        {/* Right empty flaps */}
-                        {Array(rightPadding).fill(0).map((_, i) => (
-                          <div key={`league-right-empty-${i}`} className="empty-flap">
-                            <div className="splitflap-dot left"></div>
-                            <div className="splitflap-dot right"></div>
-                          </div>
-                        ))}
-                      </>
-                    );
-                  })()}
-                </div>
-              </>
-            ) : match.competition.includes("Champions League") || match.competition.includes("UEFA") ? (
-              <div className="flex justify-center space-x-1 md:fixed-width-panel">
-                {(() => {
-                  const text = "CHAMPIONS";
-                  
-                  // For mobile, just render the characters normally
-                  if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                    return text.split('').map((char: string, index: number) => (
-                      <SplitFlapChar 
-                        key={`competition-${index}`} 
-                        value={char} 
-                        initialAnimation={initialLoad}
-                        playSound={playClickSound}
-                      />
-                    ));
-                  }
-                  
-                  // For desktop, ensure exactly 10 cells with centered text
-                  const chars = text.split('');
-                  const totalChars = chars.length;
-                  const emptyFlapsNeeded = 10 - totalChars;
-                  
-                  // Calculate left and right padding
-                  const leftPadding = 0;
-                  const rightPadding = Math.max(0, emptyFlapsNeeded);
-                  
-                  return (
-                    <>
-                      {/* Left empty flaps */}
-                      {Array(leftPadding).fill(0).map((_, i) => (
-                        <div key={`champions-left-empty-${i}`} className="empty-flap">
-                          <div className="splitflap-dot left"></div>
-                          <div className="splitflap-dot right"></div>
-                        </div>
-                      ))}
-                      
-                      {/* Actual characters */}
-                      {chars.map((char: string, index: number) => (
-                        <SplitFlapChar 
-                          key={`competition-${index}`} 
-                          value={char} 
-                          initialAnimation={initialLoad}
-                          playSound={playClickSound}
-                        />
-                      ))}
-                      
-                      {/* Right empty flaps */}
-                      {Array(rightPadding).fill(0).map((_, i) => (
-                        <div key={`champions-right-empty-${i}`} className="empty-flap">
-                          <div className="splitflap-dot left"></div>
-                          <div className="splitflap-dot right"></div>
-                        </div>
-                      ))}
-                    </>
-                  );
-                })()}
+            {/* Competition Name - mapped to 10-char split-flap rows */}
+            {competitionLines(match.competition).map((line, row) => (
+              <div key={`competition-row-${row}`} className="flex justify-center space-x-1 md:fixed-width-panel">
+                {renderFlapRow(line, `competition-${row}`)}
               </div>
-            ) : (
-              <div className="flex justify-center space-x-1 md:fixed-width-panel">
-                {(() => {
-                  const text = match.competition.toUpperCase();
-                  
-                  // For mobile, just render the characters normally
-                  if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                    return text.split('').map((char: string, index: number) => (
-                      <SplitFlapChar 
-                        key={`competition-${index}`} 
-                        value={char} 
-                        initialAnimation={initialLoad}
-                      />
-                    ));
-                  }
-                  
-                  // For desktop, ensure exactly 10 cells with centered text
-                  const chars = text.split('');
-                  const totalChars = chars.length;
-                  const emptyFlapsNeeded = 10 - totalChars;
-                  
-                  // Calculate left and right padding
-                  const leftPadding = 0;
-                  const rightPadding = Math.max(0, emptyFlapsNeeded); // All empty flaps go to the right
-                  
-                  return (
-                    <>
-                      {/* Left empty flaps */}
-                      {Array(leftPadding).fill(0).map((_, i) => (
-                        <div key={`comp-left-empty-${i}`} className="empty-flap">
-                          <div className="splitflap-dot left"></div>
-                          <div className="splitflap-dot right"></div>
-                        </div>
-                      ))}
-                      
-                      {/* Actual characters */}
-                      {chars.map((char: string, index: number) => (
-                        <SplitFlapChar 
-                          key={`competition-${index}`} 
-                          value={char} 
-                          initialAnimation={initialLoad}
-                        />
-                      ))}
-                      
-                      {/* Right empty flaps */}
-                      {Array(rightPadding).fill(0).map((_, i) => (
-                        <div key={`comp-right-empty-${i}`} className="empty-flap">
-                          <div className="splitflap-dot left"></div>
-                          <div className="splitflap-dot right"></div>
-                        </div>
-                      ))}
-                    </>
-                  );
-                })()}
-              </div>
-            )}
-            
+            ))}
+
             {/* TV Channel */}
-            <div className="flex justify-center space-x-1 md:fixed-width-panel">
-              {(() => {
-                let broadcasterName = "CHECK LOCAL";
-
-                if (userCountry === 'US' && espnData?.tvProvider) {
-                  broadcasterName = espnData.tvProvider;
-                } else {
-                  const broadcaster = getBroadcaster(userCountry, match.competition);
-                  broadcasterName = broadcaster?.name || "CHECK LOCAL";
-                }
-
-                // Limit to 10 characters on all screen sizes to fit the display
-                let text = broadcasterName.toUpperCase().substring(0, 10);
-
-                // For mobile, just render the characters normally
-                if (typeof window !== 'undefined' && window.innerWidth < 768) {
-                  return text.split('').map((char: string, index: number) => (
-                    <SplitFlapChar
-                      key={`channel-${index}`}
-                      value={char}
-                      initialAnimation={initialLoad}
-                    />
-                  ));
-                }
-                
-                // For desktop, ensure exactly 10 cells with centered text
-                const chars = text.split('');
-                const totalChars = chars.length;
-                const emptyFlapsNeeded = 10 - totalChars;
-                
-                // Calculate left and right padding (ensure non-negative)
-                const leftPadding = 0;
-                const rightPadding = Math.max(0, emptyFlapsNeeded); // Ensure non-negative
-                
-                return (
-                  <>
-                    {/* Left empty flaps */}
-                    {Array(leftPadding).fill(0).map((_, i) => (
-                      <div key={`channel-left-empty-${i}`} className="empty-flap">
-                        <div className="splitflap-dot left"></div>
-                        <div className="splitflap-dot right"></div>
-                      </div>
-                    ))}
-                    
-                    {/* Actual characters */}
-                    {chars.map((char: string, index: number) => (
-                      <SplitFlapChar 
-                        key={`channel-${index}`} 
-                        value={char} 
-                        initialAnimation={initialLoad}
-                        playSound={playClickSound}
-                      />
-                    ))}
-                    
-                    {/* Right empty flaps */}
-                    {Array(rightPadding).fill(0).map((_, i) => (
-                      <div key={`channel-right-empty-${i}`} className="empty-flap">
-                        <div className="splitflap-dot left"></div>
-                        <div className="splitflap-dot right"></div>
-                      </div>
-                    ))}
-                  </>
-                );
-              })()}
-            </div>
+            {(() => {
+              let broadcasterName: string | null = null;
+              if (userCountry === 'US' && espnData?.tvProvider) {
+                broadcasterName = espnData.tvProvider;
+              } else {
+                broadcasterName = getBroadcaster(userCountry, match.competition)?.name ?? null;
+              }
+              // No verified broadcaster for this competition/country:
+              // the split-flap reads CHECK / LOCAL across two rows.
+              const rows = broadcasterName
+                ? [broadcasterName.toUpperCase()]
+                : ['CHECK', 'LOCAL'];
+              return rows.map((line, row) => (
+                <div key={`channel-row-${row}`} className="flex justify-center space-x-1 md:fixed-width-panel">
+                  {renderFlapRow(line, `channel-${row}`)}
+                </div>
+              ));
+            })()}
           </div>
           
           {/* Sound toggle button */}
