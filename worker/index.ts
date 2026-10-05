@@ -51,6 +51,8 @@ interface MatchData {
 
 const ARSENAL_FOOTBALL_DATA_ID = "57";
 const ARSENAL_SPORTSDB_ID = "133604";
+// Domestic cups football-data doesn't cover: EFL (League) Cup, FA Cup.
+const SPORTSDB_CUP_LEAGUE_IDS = ["4570", "4482"];
 const FOOTBALL_PROXY_URL = "https://api.devlab502.net/football-proxy";
 const NO_MATCHES_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 const MATCH_CACHE_TTL = 30 * 60 * 1000; // 30 minutes — refresh periodically to catch newly scheduled matches
@@ -140,6 +142,26 @@ function fallbackVenue(homeTeam: string): string {
   return homeTeam.includes("Arsenal") ? "Emirates Stadium" : `${homeTeam} (Away)`;
 }
 
+async function sportsDbEvents(path: string): Promise<any[]> {
+  const response = await fetch(`https://www.thesportsdb.com/api/v1/json/${SPORTSDB_API_KEY}/${path}`, {
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!response.ok) throw new Error(`${path}: HTTP ${response.status}`);
+  const data: any = await response.json();
+  return data.events || [];
+}
+
+// The free key caps season listings at 15 events (early qualifiers only), and
+// round numbers change between seasons (2025-26 League Cup: 1,2,3,4,125,150,200;
+// 2026-27: 0,128,16…). So ask the cup for its next fixture and pull that whole
+// round. Misses an Arsenal tie only if it's in a later round than the cup's
+// next game — acceptable for a free source.
+async function fetchSportsDbCupRound(leagueId: string): Promise<any[]> {
+  const [next] = await sportsDbEvents(`eventsnextleague.php?id=${leagueId}`);
+  if (next?.intRound == null || !next.strSeason) return [];
+  return sportsDbEvents(`eventsround.php?id=${leagueId}&r=${next.intRound}&s=${next.strSeason}`);
+}
+
 async function fetchAllMatches(): Promise<FetchResult> {
   const now = new Date();
   const todayUtc = now.toISOString().slice(0, 10);
@@ -182,52 +204,58 @@ async function fetchAllMatches(): Promise<FetchResult> {
     console.error("Football proxy error:", e?.message ?? e);
   }
 
-  // TheSportsDB API — all competitions, so cups, Europa/Conference League,
-  // Community Shield, and friendlies are covered. Fixtures football-data
-  // already returned (PL/CL) are deduped by kickoff proximity, which also
-  // makes SportsDB a full fallback when the proxy is down.
+  // TheSportsDB API — Arsenal's next event (any competition) plus the next
+  // round of each domestic cup. Fixtures football-data already returned
+  // (PL/CL) are deduped by kickoff proximity, which also makes SportsDB a
+  // partial fallback when the proxy is down.
   const sdMatches: UpcomingMatch[] = [];
-  try {
-    const response = await fetch(
-      `https://www.thesportsdb.com/api/v1/json/${SPORTSDB_API_KEY}/eventsnext.php?id=${ARSENAL_SPORTSDB_ID}`,
-      { signal: AbortSignal.timeout(8000) }
-    );
-    if (response.ok) {
-      const data: any = await response.json();
-      const fdKickoffs = fdMatches.map((m) => new Date(m.utcDate).getTime());
-      for (const e of data.events || []) {
-        if (!e.dateEvent) continue;
-        // TheSportsDB reports null/"00:00:00" when kickoff isn't confirmed;
-        // give those a provisional midday slot so a same-day fixture neither
-        // vanishes at midnight UTC nor counts down to 00:00.
-        const hasTime = e.strTime && e.strTime !== "00:00:00";
-        const timeTbc = !hasTime;
-        const utcDate = hasTime
-          ? `${e.dateEvent}T${e.strTime}Z`
-          : `${e.dateEvent}T12:00:00Z`;
-        const isUpcoming = timeTbc
-          ? e.dateEvent >= todayUtc
-          : new Date(utcDate) > now;
-        if (!isUpcoming) continue;
-        const kickoffMs = new Date(utcDate).getTime();
-        if (fdKickoffs.some((k) => Math.abs(k - kickoffMs) < SPORTSDB_DEDUPE_WINDOW)) continue;
-        sdMatches.push({
-          competition: e.strLeague,
-          homeTeam: e.strHomeTeam,
-          awayTeam: e.strAwayTeam,
-          venue: e.strVenue || fallbackVenue(e.strHomeTeam),
-          utcDate,
-          timeTbc,
-          source: "thesportsdb",
-        });
-      }
-      sources.sportsDb = { status: "ok", matches: sdMatches.length };
-    } else {
-      console.error("TheSportsDB API non-OK response:", response.status);
-    }
-  } catch (e: any) {
-    console.error("TheSportsDB API error:", e?.message ?? e);
+  const results = await Promise.allSettled([
+    sportsDbEvents(`eventsnext.php?id=${ARSENAL_SPORTSDB_ID}`),
+    ...SPORTSDB_CUP_LEAGUE_IDS.map(fetchSportsDbCupRound),
+  ]);
+  const failures = results.filter((r): r is PromiseRejectedResult => r.status === "rejected");
+  for (const f of failures) console.error("TheSportsDB API error:", f.reason?.message ?? f.reason);
+  const arsenalEvents = results
+    .flatMap((r) => (r.status === "fulfilled" ? r.value : []))
+    .filter((e) => e.idHomeTeam === ARSENAL_SPORTSDB_ID || e.idAwayTeam === ARSENAL_SPORTSDB_ID);
+  const fdKickoffs = fdMatches.map((m) => new Date(m.utcDate).getTime());
+  const seenEventIds = new Set<string>();
+  for (const e of arsenalEvents) {
+    if (!e.dateEvent || seenEventIds.has(e.idEvent)) continue;
+    seenEventIds.add(e.idEvent);
+    // TheSportsDB reports null/"00:00:00" when kickoff isn't confirmed;
+    // give those a provisional midday slot so a same-day fixture neither
+    // vanishes at midnight UTC nor counts down to 00:00.
+    const hasTime = e.strTime && e.strTime !== "00:00:00";
+    const timeTbc = !hasTime;
+    const utcDate = hasTime
+      ? `${e.dateEvent}T${e.strTime}Z`
+      : `${e.dateEvent}T12:00:00Z`;
+    const isUpcoming = timeTbc
+      ? e.dateEvent >= todayUtc
+      : new Date(utcDate) > now;
+    if (!isUpcoming) continue;
+    const kickoffMs = new Date(utcDate).getTime();
+    if (fdKickoffs.some((k) => Math.abs(k - kickoffMs) < SPORTSDB_DEDUPE_WINDOW)) continue;
+    sdMatches.push({
+      competition: e.strLeague,
+      homeTeam: e.strHomeTeam,
+      awayTeam: e.strAwayTeam,
+      venue: e.strVenue || fallbackVenue(e.strHomeTeam),
+      utcDate,
+      timeTbc,
+      source: "thesportsdb",
+    });
   }
+  // Arsenal always has a next fixture during the season (Aug–May), so zero
+  // Arsenal events from every lookup means the source is broken, not idle.
+  const inSeason = ![5, 6].includes(now.getUTCMonth());
+  const noEventsInSeason = inSeason && arsenalEvents.length === 0;
+  if (noEventsInSeason) console.error("TheSportsDB returned no Arsenal events during the season");
+  sources.sportsDb = {
+    status: failures.length === 0 && !noEventsInSeason ? "ok" : "error",
+    matches: sdMatches.length,
+  };
 
   const matches = [...fdMatches, ...sdMatches].sort(
     (a, b) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime()
