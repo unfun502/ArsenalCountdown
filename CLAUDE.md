@@ -44,10 +44,11 @@ Local dev: set both in your shell before running `npm run build` (or in `.env` i
 ### VPS-only (not in Worker, not in GH)
 - `FOOTBALL_DATA_API_KEY` — Football-Data.org API key (free tier, 10 req/min). Set in `~/feedback/.env` on VPS only — used by the football-proxy server.
 
-### Bitwarden backups
-- `Cloudflare API Token` (in `devlab502/Infrastructure`)
-- `Sentry — devlab502 (auth + DSN)` (in `devlab502/Infrastructure`)
-- `Arsenal Countdown — Worker runtime secrets` (in `devlab502/Per-App`) — username = SPORTSDB_API_KEY, password = FOOTBALL_PROXY_SECRET
+### 1Password (vault `Automation`) — source of truth
+- `Arsenal Countdown — Worker runtime secrets` — username = SPORTSDB_API_KEY, password = FOOTBALL_PROXY_SECRET
+- `Arsenal Countdown CACHE_SECRET`
+- `env: ArsenalCountdownGit` — backs the local `.env*` files written by `../env-pull.sh`
+- `Cloudflare API Token` and `Sentry — devlab502 (auth + DSN)` — shared fleet items
 
 ### VPS Proxy (football-proxy)
 Service runs at `~/feedback/football-proxy/index.js` in the Docker Compose stack on port 3012.
@@ -58,7 +59,7 @@ To restart: `cd ~/feedback && docker compose restart football-proxy`
 ## Data Verification
 - `GET /api/fixtures` returns the full merged upcoming match list plus per-source health (`degraded`, `sources`) — consumed by the weekly verification routine, not the UI.
 - `shared/fixtures-baseline-2026-27.json` — released 2026-27 PL fixture list used as a cross-check baseline (dates provisional; opponent order stable).
-- A Claude scheduled task `arsenal-countdown-weekly-verify` (Mondays 8am, runs while the desktop app is open) web-checks fixtures + broadcaster map and emails devlab502@proton.me on discrepancy via Zoho SMTP (`send-alert.py` in the task folder; app-password credentials in `~\.claude\secrets\zoho-smtp.json`, never committed).
+- A Claude scheduled task `arsenal-countdown-weekly-verify` (Mondays 8am, runs while the desktop app is open) web-checks fixtures + broadcaster map and emails devlab502@proton.me on discrepancy via Resend (`send-alert.py` in the task folder reads the Resend API key from 1Password at send time; nothing on disk). Its unattended tool permissions live in this repo's gitignored `.claude/settings.local.json`.
 - Broadcaster rights in `shared/constants.ts` were verified for 2026-27 (July 2026). `null` entries mean "verified: no broadcaster in that country" — UI shows "check local listings".
 
 ## Database Needs
